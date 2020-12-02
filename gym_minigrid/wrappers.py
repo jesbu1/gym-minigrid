@@ -355,3 +355,16 @@ class DirectionObsWrapper(gym.core.ObservationWrapper):
         slope = np.divide( self.goal_position[1] - self.agent_pos[1] ,  self.goal_position[0] - self.agent_pos[0])
         obs['goal_direction'] = np.arctan( slope ) if self.type == 'angle' else slope
         return obs
+
+
+class GoalPositionWrapper(gym.core.Wrapper):
+
+    def __init__(self, env):
+        super().__init__(env)
+        self.goal_pos = None
+
+    def reset(self):
+        obs = self.env.reset()
+        self.goal_pos = self.grid.find_goal()
+        return obs
+
