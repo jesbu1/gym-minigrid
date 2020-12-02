@@ -150,23 +150,57 @@ def a_star(env):
     return solution
 
 
-def show_init(itr):
-    window = Window('Env No.%d' % (itr + 1))
+def show_init(count):
+    window = Window('Env No.%d' % (count))
     window.set_caption(env.mission)
     img = env.render('rgb_array', tile_size=32)
     window.show_img(img)
     window.show(block=True)
 
 
-def collect_trajectories(env, show=False):
+def in_room(pos):
+    # | 4 | 1 |
+    # | 3 | 2 |
+    w, h = pos
+    if w < 9 and h < 9:
+        return 4
+    elif w < 9 and h > 9:
+        return 3
+    elif w > 9 and h < 9:
+        return 1
+    else:
+        return 2
+
+
+# exclude 4 of the 16 starting agent/goal positions
+def training_valid(env):
+    agent_pos = env.agent_pos
+    goal_pos = env.goal_pos
+    agent_goal = (in_room(agent_pos), in_room(goal_pos))
+    test_set = {
+        (1,3),
+        (3,1),
+        (2,4),
+        (4,2)
+    }
+    return agent_goal not in test_set
+
+
+def collect_trajectories(env, num=10, show=False):
     data = []
-    for itr in range(50):
+    count = 0
+    while count < num:
         obs = env.reset()
 
-        if show:
-            show_init(itr)
+        if training_valid(env):
+            count += 1
+        else:
+            continue
 
-        print('Collecting %dth trajectory...' % (itr + 1))
+        if show:
+            show_init(count)
+
+        print('Collecting %dth trajectory...' % (count))
         actions = a_star(env)
         print('Actions (len=%d):' % len(actions), actions)
         trajectory = Trajectory(actions, env)
@@ -207,4 +241,4 @@ class Trajectory:
         print('Agent rewards (len=%d):' % len(self.rewards), self.rewards, '\n')
 
 
-collect_trajectories(env)
+collect_trajectories(env, num=50, show=True)
