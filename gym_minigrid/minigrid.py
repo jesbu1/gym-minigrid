@@ -380,6 +380,11 @@ class Grid:
         assert j >= 0 and j < self.height
         return self.grid[j * self.width + i]
 
+    def isValid(self, i, j):
+        if i < 0 or i >= self.width or j < 0 or j >= self.height:
+            return False
+        return type(self.get(i,j))!=Wall
+
     def horz_wall(self, x, y, length=None, obj_type=Wall):
         if length is None:
             length = self.width - x

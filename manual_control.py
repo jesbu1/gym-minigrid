@@ -23,12 +23,16 @@ def reset():
     if hasattr(env, 'mission'):
         print('Mission: %s' % env.mission)
         window.set_caption(env.mission)
+        print(env.agent_pos)
+        print(env.agent_dir)
 
     redraw(obs)
 
 def step(action):
     obs, reward, done, info = env.step(action)
-    print('step=%s, reward=%.2f' % (env.step_count, reward))
+    print('step=%s, action=%d, reward=%.2f' % (env.step_count, action, reward))
+    print(env.agent_pos)
+    print(env.agent_dir)
 
     if done:
         print('done!')
