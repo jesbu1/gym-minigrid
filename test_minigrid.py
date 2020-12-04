@@ -322,13 +322,15 @@ if __name__ == "__main__":
 
     env = gym.make("MiniGrid-FourRooms-v0")
     env = GoalPositionWrapper(env)
+    skill_length = 10
 
     trajectories = collect_trajectories(env, num=50, show=False)
-    code_book = build_codebook(trajectories, skill_length=2)
+    code_book = build_codebook(trajectories, skill_length=skill_length)
 
     print(code_book)
-    np.save('./data/code_book_2.npy', code_book)
-    cb = np.load('./data/code_book_2.npy', allow_pickle=True).item()
+    dir = './data/code_book_'+str(skill_length)+'.npy'
+    np.save(dir, code_book)
+    cb = np.load(dir, allow_pickle=True).item()
     print(cb)
 
     skills = cb.keys()
