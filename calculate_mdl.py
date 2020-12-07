@@ -19,22 +19,31 @@ def calculate_codebook_dl(codebook):
     """
     Given a codebook, calculate its description length:
     Length(encoding) + Size(Huffman Tree)
+
+    The bit length of the encoding is easily calculated, but the 
+    size of the Huffman Tree can be represented simply as 
+    the number of bits required to recover the tree. In canonical form,
+    it's just the number of bits needed to encode the bit LENGTHS of
+    each symbol.
     """
     codec = HuffmanCodec.from_frequencies(codebook)
     codec.encode(codebook)
     #codec.print_code_table()
-
+    
+    # Need to update this to get code length of trajectories
     entire_code = []
     for skill, occurences in codebook.items():
         entire_code.extend([skill] * occurences)
-    #message = "".join(entire_code)
     encoded = codec.encode(entire_code)
-    #print(len(encoded))
-    #print(encoded)
-
-    #currently only calculates the length of encoding the same set of skills
-    return len(encoded)
-
+    entire_code = set(entire_code)
+    
+    number_of_bits = 0
+    # Calculate the number of bits to encode the symbols in the trajectory
+    for symbol, (bits, val) in codec._table.items():
+        if symbol in entire_code:
+            number_of_bits += len(symbol.encode('utf-8')) * 8
+            number_of_bits += bits
+    return len(encoded)*8 + number_of_bits # * 8 for byte to bit conversion
 
 
 if __name__ == "__main__":
