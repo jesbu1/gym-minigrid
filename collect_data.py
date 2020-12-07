@@ -444,25 +444,26 @@ if __name__ == "__main__":
     }
     """
 
-    for i in range(10):  # 10 different codebooks from 10 sets of skills
-
-        # skills = generate_skills()
-        # print('Generated skills (len=%d):' % len(skills), skills)
-        #
-        # trajectories = collect_trajectories(env, skills, num=1000, show=False)
-        # code_book = build_codebook_method_1(trajectories, skills)
-
-        # print(code_book)
-        path = os.path.join('./data/method1', 'code_book'+str(i+1)+'.npy')
-        # np.save(path, code_book)
-        # print('Codebook saved to %s' % path)
-
-        cb = np.load(path, allow_pickle=True).item()
-        print(cb)
+    # for i in range(10):  # 10 different codebooks from 10 sets of skills
+    #
+    #     # skills = generate_skills()
+    #     # print('Generated skills (len=%d):' % len(skills), skills)
+    #     #
+    #     # trajectories = collect_trajectories(env, skills, num=1000, show=False)
+    #     # code_book = build_codebook_method_1(trajectories, skills)
+    #
+    #     # print(code_book)
+    #     path = os.path.join('./data/method1', 'code_book'+str(i+1)+'.npy')
+    #     # np.save(path, code_book)
+    #     # print('Codebook saved to %s' % path)
+    #
+    #     cb = np.load(path, allow_pickle=True).item()
+    #     print(cb)
 
     """
     Method 2: collect A* trajectories with only primitive actions, randomly dissect trajectories
-    to form skills (length from 2 to 6), save the trajectories and skill frequencies as codebook:
+    to form skills (length from 2 to 6), save the trajectories and skill frequencies plus primitive
+    action frequencies as codebook:
     {
         'trajectories': ['1001 201 222 22012', '1001 222 2012', etc.],
         '0': 7, # primitive count
