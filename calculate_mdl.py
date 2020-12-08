@@ -25,13 +25,13 @@ def preprocess_codebook(codebook):
     codebook_with_spaces = {}
     for key, value in codebook.items():
         if value > 0:
-            codebook_with_spaces[key + ' '] = value
+            codebook_with_spaces[key] = value
 
     single_symbol_traj_split = []
     for trajectory in trajectories:
         for symbol in trajectory.split(" "):
             if symbol != "":
-                single_symbol_traj_split.append(symbol + " ")
+                single_symbol_traj_split.append(symbol)
     #trajectories = "".join(trajectories)
     return single_symbol_traj_split, codebook_with_spaces
     
@@ -40,6 +40,7 @@ def calculate_codebook_dl(codebook):
     """
     Given a codebook, calculate its description length: Length(encoding) +
     Size(Huffman Tree)
+
     
     The bit length of the encoding is easily calculated, but the size of the
     Huffman Tree can be represented simply as the number of bits required to
@@ -59,7 +60,9 @@ def calculate_codebook_dl(codebook):
         if symbol in trajectory_symbol_set:
             number_of_bits += len(symbol.encode('utf-8')) * 8
             number_of_bits += bits
-    return len(encoded)*8 + number_of_bits # * 8 for byte to bit conversion
+    dl = len(encoded)*8 + number_of_bits # * 8 for byte to bit conversion
+    uncompressed_len = len("".join(trajectories).encode('utf-8')) * 8
+    return dl, uncompressed_len 
 
 
 if __name__ == "__main__":
@@ -71,8 +74,9 @@ if __name__ == "__main__":
     codebooks = discover_codebooks(args.location)
     codebook_name_dl_tuples = []
     for codebook in codebooks:
-        dl = calculate_codebook_dl(codebook[1])
-        codebook_name_dl_tuples.append((codebook[0], dl))
+        dl, uncompressed_len = calculate_codebook_dl(codebook[1])
+        codebook_name_dl_tuples.append((codebook[0], dl, uncompressed_len))
     sorted_codebooks_by_dl = sorted(codebook_name_dl_tuples, key=lambda x: x[1])
-    for name, dl in sorted_codebooks_by_dl:
+    for name, dl, uncompressed_len in sorted_codebooks_by_dl:
+        #print(name, dl, uncompressed_len)
         print(name, dl)
