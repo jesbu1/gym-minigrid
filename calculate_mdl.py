@@ -15,32 +15,48 @@ def discover_codebooks(location):
             codebooks.append((codebook_file, codebook.item())) #.item() to extract dictionary from 0d array
     return codebooks
 
+def preprocess_codebook(codebook):
+    """
+    Removes trajectories from keys and adds a space to each skill/symbol so
+    as to be able to encode the trajectories. Also removes skills with 0
+    frequency.
+    """
+    trajectories = codebook.pop('trajectories')
+    codebook_with_spaces = {}
+    for key, value in codebook.items():
+        if value > 0:
+            codebook_with_spaces[key + ' '] = value
+
+    single_symbol_traj_split = []
+    for trajectory in trajectories:
+        for symbol in trajectory.split(" "):
+            if symbol != "":
+                single_symbol_traj_split.append(symbol + " ")
+    #trajectories = "".join(trajectories)
+    return single_symbol_traj_split, codebook_with_spaces
+    
+
 def calculate_codebook_dl(codebook):
     """
-    Given a codebook, calculate its description length:
-    Length(encoding) + Size(Huffman Tree)
-
-    The bit length of the encoding is easily calculated, but the 
-    size of the Huffman Tree can be represented simply as 
-    the number of bits required to recover the tree. In canonical form,
-    it's just the number of bits needed to encode the bit LENGTHS of
-    each symbol.
+    Given a codebook, calculate its description length: Length(encoding) +
+    Size(Huffman Tree)
+    
+    The bit length of the encoding is easily calculated, but the size of the
+    Huffman Tree can be represented simply as the number of bits required to
+    recover the tree. In canonical form, it's just the number of bits needed
+    to encode the bit LENGTHS of each symbol.
     """
+    trajectories, codebook = preprocess_codebook(codebook)
     codec = HuffmanCodec.from_frequencies(codebook)
     codec.encode(codebook)
     #codec.print_code_table()
-    
-    # Need to update this to get code length of trajectories
-    entire_code = []
-    for skill, occurences in codebook.items():
-        entire_code.extend([skill] * occurences)
-    encoded = codec.encode(entire_code)
-    entire_code = set(entire_code)
-    
+    encoded = codec.encode(trajectories)
+
+    trajectory_symbol_set = set(trajectories) 
     number_of_bits = 0
     # Calculate the number of bits to encode the symbols in the trajectory
     for symbol, (bits, val) in codec._table.items():
-        if symbol in entire_code:
+        if symbol in trajectory_symbol_set:
             number_of_bits += len(symbol.encode('utf-8')) * 8
             number_of_bits += bits
     return len(encoded)*8 + number_of_bits # * 8 for byte to bit conversion
@@ -53,6 +69,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     codebooks = discover_codebooks(args.location)
+    codebook_name_dl_tuples = []
     for codebook in codebooks:
         dl = calculate_codebook_dl(codebook[1])
-        print(codebook[0], dl)
+        codebook_name_dl_tuples.append((codebook[0], dl))
+    sorted_codebooks_by_dl = sorted(codebook_name_dl_tuples, key=lambda x: x[1])
+    for name, dl in sorted_codebooks_by_dl:
+        print(name, dl)
