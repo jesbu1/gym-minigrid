@@ -9,6 +9,7 @@ import random
 import datetime as dt
 import numpy as np
 from gym_minigrid.window import Window
+from calculate_mdl import preprocess_codebook
 
 
 # not consistent
@@ -89,7 +90,7 @@ def one_step(curr_entry, action):
     return new_entry
 
 
-def a_star(env, skills=None):
+def a_star(env, skills=None, codebook=None):
 
     agent_pos = env.agent_pos
     goal_pos = env.goal_pos
@@ -109,8 +110,12 @@ def a_star(env, skills=None):
     heappush(open, [init_f, next(counter), (init_entry, [])])  # f, counter, ((x, y, dir), action_seq)
     open_dict = {init_entry: init_f}  # (x, y, dir) => f
 
-    if not skills:
+    if skills is None and codebook is None:
         skills = [0, 1, 2]  # primitive actions: left, right, forward
+    elif skills is None and codebook is not None:
+        skills = [list(map(int, skill)) for skill in codebook.keys()]  # convert '1011' to [1,0,1,1]
+
+    cost = 0
 
     while open:
 
@@ -133,14 +138,12 @@ def a_star(env, skills=None):
                 new_entry = one_step(curr_entry, action)
                 if not is_valid(new_entry):
                     new_entry = curr_entry
-                    break
             elif isinstance(action, list):
                 new_entry = curr_entry
                 for a in action: # action: [a1, a2, ...]
-                    new_entry = one_step(new_entry, a)
-                    if not is_valid(new_entry):
-                        new_entry = curr_entry
-                        break
+                    next_entry = one_step(new_entry, a)
+                    if is_valid(next_entry):
+                        new_entry = next_entry
 
             new_h = get_h(new_entry, goal_pos)
             new_g = curr_g + 1
@@ -154,10 +157,11 @@ def a_star(env, skills=None):
                     open_dict[new_entry] = new_f
                     heappush(open, [new_f, next(counter), (new_entry, new_seq)])
             elif new_entry not in closed and new_entry not in open_dict:
+                cost += 1
                 open_dict[new_entry] = new_f
                 heappush(open, [new_f, next(counter), (new_entry, new_seq)])
 
-    return solution
+    return solution, cost
 
 
 def show_init(count=1):
@@ -210,7 +214,7 @@ def collect_trajectories(env, skills=None, num=50, show=False, print_every=50):
         if show:
             show_init(count=count)
 
-        actions = a_star(env, skills)
+        actions, _ = a_star(env, skills=skills)
         trajectory = Trajectory(actions, env)
         data.append(trajectory)
 
@@ -487,3 +491,12 @@ if __name__ == "__main__":
     #
     #     cb = np.load(path, allow_pickle=True).item()
     #     print(cb)
+
+    """Use codebook to run a_star"""
+
+    cb = np.load('./data/method2/code_book3.npy', allow_pickle=True).item()
+    _, cb = preprocess_codebook(cb)
+    env.reset()
+    # show_init()
+    solution, cost = a_star(env, codebook=cb)
+    print(solution, cost)
