@@ -9,7 +9,7 @@ import random
 import datetime as dt
 import numpy as np
 from gym_minigrid.window import Window
-from calculate_mdl import preprocess_codebook
+from calculate_mdl import preprocess_codebook, discover_codebooks
 
 
 # not consistent
@@ -248,6 +248,7 @@ class Trajectory:
         self.goal_pos = env.goal_pos
 
         start_entry = (start_pos[0], start_pos[1], env.agent_dir)
+        self.start_pos = start_entry
         self.agent_states = [start_entry]
         self.rewards = []
         self.done = False
@@ -467,34 +468,40 @@ def evaluate_solution(solution, env):
     return len(agent_states)-1 == len(rewards) == len(solution) and rewards[-1] > 0 and is_done
 
 
-def evaluate_codebook(env, codebook, num_test=100, num_train=50):
+def evaluate_codebook(env, codebooks, num_test=100, num_train=50):
     """
     input:
         env: env variable
-        codebook: pre-processed codebook to evaluate
+        codebooks: pre-processed codebook to evaluate
         num_test: number of test start/end pairs to evaluate,
         num_train: number of train start/end pairs to evaluate
 
     output:
         solutions: dict storing num_test trajectories for test set, num_train trajectories for train set
+            for each codebook in codebooks
+            entry form: (str form of trajectory, a_star search cost, start_pos, goal_pos)
     """
 
     count_train, count_test = 0, 0
-    solutions = {'train': [], 'test': []}
+    solutions = {}
+    for file, codebook in codebooks:
+        solutions[file] = {'test': [], 'train': []}
     while 1:
         if count_train >= num_train and count_test >= num_test:
             break
         env.reset()
 
         if not training_valid(env) and count_test < num_test:  # in test set
-            solution, cost = a_star(env, codebook=codebook)
-            traj = Trajectory(solution, env, simulate=True)  # simulate to save time from interacting with env
-            solutions['test'].append((str(traj), cost))
+            for file, codebook in codebooks:
+                solution, cost = a_star(env, codebook=codebook)
+                traj = Trajectory(solution, env, simulate=True)  # simulate without interacting with env
+                solutions[file]['test'].append((str(traj), cost, traj.start_pos, traj.goal_pos))
             count_test += 1
         elif training_valid(env) and count_train < num_train:  # in train set
-            solution, cost = a_star(env, codebook=codebook)
-            traj = Trajectory(solution, env, simulate=True)
-            solutions['train'].append((str(traj), cost))
+            for file, codebook in codebooks:
+                solution, cost = a_star(env, codebook=codebook)
+                traj = Trajectory(solution, env, simulate=True)
+                solutions[file]['train'].append((str(traj), cost, traj.start_pos, traj.goal_pos))
             count_train += 1
 
     return solutions
@@ -561,15 +568,18 @@ if __name__ == "__main__":
 
     """Evaluate codebooks"""
 
-    # for i in range(10):
+    # codebooks = discover_codebooks('./data/method2')
     #
-    #     # cb = np.load('./data/method2/code_book'+str(i+1)+'.npy', allow_pickle=True).item()
-    #     # _, cb = preprocess_codebook(cb)
-    #     # solutions = evaluate_codebook(env, cb)
+    # # codebooks = [(file_name, preprocess_codebook(codebook)[1]) for file_name, codebook in codebooks]
+    # # solutions = evaluate_codebook(env, codebooks)
+    # # for file, dict in solutions.items():
+    # #
+    # #     path = './data/method2/evaluations/trajectories_' + file
+    # #     np.save(path, dict)
+    # #     print('Trajectories saved to %s' % path)
     #
-    #     path = './data/method2/evaluations/trajectories_cb_'+str(i+1)+'.npy'
-    #     # np.save(path, solutions)
-    #     # print('Trajectories saved to %s.' % path)
-    #
-    #     solus = np.load(path, allow_pickle=True).item()
-    #     print(solus)
+    # files = [file for file, _ in codebooks]
+    # for file in files:
+    #     path = './data/method2/evaluations/trajectories_' + file
+    #     dict = np.load(path, allow_pickle=True).item()
+    #     print(dict)
