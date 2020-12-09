@@ -489,12 +489,12 @@ def evaluate_codebook(env, codebook, num_test=100, num_train=50):
         if not training_valid(env) and count_test < num_test:  # in test set
             solution, cost = a_star(env, codebook=codebook)
             traj = Trajectory(solution, env, simulate=True)  # simulate to save time from interacting with env
-            solutions['test'].append(str(traj))
+            solutions['test'].append((str(traj), cost))
             count_test += 1
         elif training_valid(env) and count_train < num_train:  # in train set
             solution, cost = a_star(env, codebook=codebook)
             traj = Trajectory(solution, env, simulate=True)
-            solutions['train'].append(str(traj))
+            solutions['train'].append((str(traj), cost))
             count_train += 1
 
     return solutions
