@@ -230,9 +230,8 @@ def collect_trajectories(env, skills=None, num=50, show=False, print_every=50):
 
 
 class Trajectory:
-    # collected using pre-defined skills
 
-    def __init__(self, actions, env):
+    def __init__(self, actions, env, simulate=False):
         self.env = env
         self.actions = actions
 
@@ -253,23 +252,29 @@ class Trajectory:
         self.rewards = []
         self.done = False
 
+        curr_entry = start_entry
+
         for action in actions:
             curr_agent_states = []
             curr_rewards = []
+
             if isinstance(action, int):  # primitive actions
-                obs, reward, done, info = env.step(action)
-                curr_rewards.append(reward)
-                curr_pos = env.agent_pos
-                curr_dir = env.agent_dir
-                curr_entry = (curr_pos[0], curr_pos[1], curr_dir)
-                curr_agent_states.append(curr_entry)
 
-                if done:
-                    self.done = True
+                if simulate:
+                    new_entry = one_step(curr_entry, action)
+                    if not is_valid(new_entry):
+                        new_entry = curr_entry
+                    curr_agent_states.append(new_entry)
+                    curr_entry = new_entry
 
-            elif isinstance(action, list):
-                for a in action:
-                    obs, reward, done, info = env.step(a)
+                    if curr_entry[:2] == self.goal_pos:
+                        curr_rewards.append(1)
+                        self.done = True
+                    else:
+                        curr_rewards.append(0)
+
+                else:
+                    obs, reward, done, info = env.step(action)
                     curr_rewards.append(reward)
                     curr_pos = env.agent_pos
                     curr_dir = env.agent_dir
@@ -278,7 +283,36 @@ class Trajectory:
 
                     if done:
                         self.done = True
-                        break
+
+            elif isinstance(action, list):
+                new_entry = curr_entry
+                for a in action:
+
+                    if simulate:
+                        next_entry = one_step(new_entry, a)
+                        if is_valid(next_entry):
+                            new_entry = next_entry
+                        curr_agent_states.append(new_entry)
+                        curr_entry = new_entry
+
+                        if curr_entry[:2] == self.goal_pos:
+                            curr_rewards.append(1)
+                            self.done = True
+                            break
+                        else:
+                            curr_rewards.append(0)
+
+                    else:
+                        obs, reward, done, info = env.step(a)
+                        curr_rewards.append(reward)
+                        curr_pos = env.agent_pos
+                        curr_dir = env.agent_dir
+                        curr_entry = (curr_pos[0], curr_pos[1], curr_dir)
+                        curr_agent_states.append(curr_entry)
+
+                        if done:
+                            self.done = True
+                            break
 
             self.rewards.append(curr_rewards[-1])
             self.agent_states.append(curr_agent_states[-1])
@@ -433,6 +467,39 @@ def evaluate_solution(solution, env):
     return len(agent_states)-1 == len(rewards) == len(solution) and rewards[-1] > 0 and is_done
 
 
+def evaluate_codebook(env, codebook, num_test=100, num_train=50):
+    """
+    input:
+        env: env variable
+        codebook: pre-processed codebook to evaluate
+        num_test: number of test start/end pairs to evaluate,
+        num_train: number of train start/end pairs to evaluate
+
+    output:
+        solutions: dict storing num_test trajectories for test set, num_train trajectories for train set
+    """
+
+    count_train, count_test = 0, 0
+    solutions = {'train': [], 'test': []}
+    while 1:
+        if count_train >= num_train and count_test >= num_test:
+            break
+        env.reset()
+
+        if not training_valid(env) and count_test < num_test:  # in test set
+            solution, cost = a_star(env, codebook=codebook)
+            traj = Trajectory(solution, env, simulate=True)  # simulate to save time from interacting with env
+            solutions['test'].append(str(traj))
+            count_test += 1
+        elif training_valid(env) and count_train < num_train:  # in train set
+            solution, cost = a_star(env, codebook=codebook)
+            traj = Trajectory(solution, env, simulate=True)
+            solutions['train'].append(str(traj))
+            count_train += 1
+
+    return solutions
+
+
 if __name__ == "__main__":
 
     env = gym.make("MiniGrid-FourRooms-v0")
@@ -492,11 +559,17 @@ if __name__ == "__main__":
     #     cb = np.load(path, allow_pickle=True).item()
     #     print(cb)
 
-    """Use codebook to run a_star"""
+    """Evaluate codebooks"""
 
-    cb = np.load('./data/method2/code_book3.npy', allow_pickle=True).item()
-    _, cb = preprocess_codebook(cb)
-    env.reset()
-    # show_init()
-    solution, cost = a_star(env, codebook=cb)
-    print(solution, cost)
+    # for i in range(10):
+    #
+    #     # cb = np.load('./data/method2/code_book'+str(i+1)+'.npy', allow_pickle=True).item()
+    #     # _, cb = preprocess_codebook(cb)
+    #     # solutions = evaluate_codebook(env, cb)
+    #
+    #     path = './data/method2/evaluations/trajectories_cb_'+str(i+1)+'.npy'
+    #     # np.save(path, solutions)
+    #     # print('Trajectories saved to %s.' % path)
+    #
+    #     solus = np.load(path, allow_pickle=True).item()
+    #     print(solus)
