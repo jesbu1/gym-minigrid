@@ -77,10 +77,8 @@ if __name__ == "__main__":
         original_name = codebook_name.replace("trajectories_", "")
         codebook_info = codebook_dict[original_name]
         process_evaluation(evaluation, codebook_info['codec'], codebook_info['tree_bits'], original_name, trajectory_dict) 
-    #print(trajectory_dict.keys(), trajectory_dict['test'].keys())
 
-    aggregate_stats = []
-
+    # building a pandas dataframe
     pd_index = []
     pd_dict = {'codebook_dl': []}
     length_set = set()
@@ -110,10 +108,14 @@ if __name__ == "__main__":
                 pd_dict[length] = []
             pd_dict[length].append(codebook_dict[name]['probabilities'][i])
     df = pd.DataFrame(data=pd_dict, index=pd_index)
+
+    #printing correlation of codebook description length and other metrics
     for column in df.columns:
         if column != 'codebook_dl' and column not in length_set:
             correlation = df['codebook_dl'].corr(df[column])
             print(column, correlation)
+
+    #printing correlation of frequency of skill length and all metrics
     for col1 in df.columns:
         if col1 in length_set:
             for col2 in df.columns:
