@@ -369,18 +369,12 @@ def build_codebook_method_1(trajectories, complete_skills):
     return code_book
 
 
-def build_codebook_method_2(trajectories, skill_length_range=None, primitive_actions=None):
+def build_codebook_method_2(trajectories, skill_length_range=None):
     # code_book: {
     #     'trajectories': list of str representations of all trajectories,
     #     skill in str form: num of occurrences,
-    #     primitive action: num of occurrences
     # }
     code_book = {'trajectories': []}
-
-    if primitive_actions is None:
-        primitive_actions = ['0', '1', '2']
-    for primitive_action in primitive_actions:
-        code_book[primitive_action] = 0
 
     if skill_length_range is None:
         skill_length_range = range(2, 11)  # default lengths: from 2 to 10
@@ -396,9 +390,6 @@ def build_codebook_method_2(trajectories, skill_length_range=None, primitive_act
         trajectory.split_actions(skill_length_range, biased_probabilities)
         actions = trajectory.action_str
         code_book['trajectories'].append(actions)
-
-        for primitive_action in primitive_actions:
-            code_book[primitive_action] += actions.count(primitive_action)
 
         for action in actions.split(' ')[:-1]:  # exclude '' at the end
             if action not in code_book:
@@ -513,98 +504,103 @@ def evaluate_codebook(env, codebooks, num_test=100, num_train=50):
     return solutions
 
 
+def collect_data_method1(env, data_folder, seed=None, num_code_books=10, num_trajectories=1000):
+    """
+    Method 1: randomly define skills, collect A* trajectories with
+    these skills , save the trajectories and skill frequencies as codebook
+    """
+
+    if seed is not None:
+        env.seed(seed)
+
+    for i in range(num_code_books):
+
+        skills = generate_skills()
+        print('Generated skills (len=%d):' % len(skills), skills)
+
+        trajectories = collect_trajectories(env, skills, num=num_trajectories, show=False)
+        code_book = build_codebook_method_1(trajectories, skills)
+
+        # print(code_book)
+        path = os.path.join(data_folder, 'code_book'+str(i+1)+'.npy')
+        np.save(path, code_book)
+        print('Codebook saved to %s' % path)
+
+        # cb = np.load(path, allow_pickle=True).item()
+        # print(cb)
+
+
+def collect_data_method2(env,
+                         data_folder,
+                         skill_length_range,
+                         seed=None,
+                         num_code_books=20,
+                         num_trajectories=100):
+    """
+    Method 2: collect A* trajectories with only primitive actions, randomly dissect trajectories
+    to form skills, save the trajectories and skill frequencies as codebook
+    """
+
+    if seed is not None:
+        env.seed(seed)
+
+    trajectories = collect_trajectories(env, num=num_trajectories, show=False)
+
+    for i in range(num_code_books):
+
+        code_book = build_codebook_method_2(trajectories, skill_length_range=skill_length_range)
+        # print(code_book)
+
+        path = os.path.join(data_folder, 'code_book' + str(i + 1) + '.npy')
+        np.save(path, code_book)
+        print('Codebook saved to %s' % path)
+
+        # cbb = np.load(path, allow_pickle=True).item()
+        # _, cb = preprocess_codebook(cbb)
+        # print(cb)
+
+        # # ensure it's sampling according to the biased distribution
+        # analysis = {}
+        # total = 0
+        # for k, v in cb.items():
+        #     if len(k) not in analysis:
+        #         analysis[len(k)] = v
+        #     else:
+        #         analysis[len(k)] += v
+        #     total += v
+        # for k, v in analysis.items():
+        #     analysis[k] = v/total
+        # print(analysis)
+
+
+def evaluate_data(env, data_folder, seed=None):
+    """Evaluate codebooks"""
+
+    if seed is not None:
+        env.seed(seed)
+
+    codebooks_pre = discover_codebooks(data_folder)
+
+    codebooks = [(file_name, preprocess_codebook(codebook)[1]) for file_name, codebook in codebooks_pre]
+    solutions = evaluate_codebook(env, codebooks)
+    for file, dict in solutions.items():
+        path = os.path.join(data_folder, 'evaluations', 'trajectories_' + file)
+        # np.save(path, dict)
+        print('Trajectories saved to %s' % path)
+
+    # files = [file for file, _ in codebooks_pre]
+    # for file in files:
+    #     path = os.path.join(data_folder, 'evaluations', 'trajectories_' + file)
+    #     dict = np.load(path, allow_pickle=True).item()
+    #     print(dict)
+
+
 if __name__ == "__main__":
 
     env = gym.make("MiniGrid-FourRooms-v0")
     env = GoalPositionWrapper(env)
 
-    """
-    Method 1: randomly define skills (length from 2 to 6), collect A* trajectories with
-    these skills , save the trajectories and skill frequencies as codebook: 
-    {
-        'trajectories': ['1001 201 222 22012', '1001 222 2012', etc.],
-        '1001': 2,
-        '201': 1, etc.
-    }
-    """
+    data_folder = './data/method2_high_var_1_to_6'
 
-    # env.seed(99)
-    # for i in range(10):  # 10 different codebooks from 10 sets of skills
-    #
-    #     # skills = generate_skills()
-    #     # print('Generated skills (len=%d):' % len(skills), skills)
-    #     #
-    #     # trajectories = collect_trajectories(env, skills, num=1000, show=False)
-    #     # code_book = build_codebook_method_1(trajectories, skills)
-    #
-    #     # print(code_book)
-    #     path = os.path.join('./data/method1', 'code_book'+str(i+1)+'.npy')
-    #     # np.save(path, code_book)
-    #     # print('Codebook saved to %s' % path)
-    #
-    #     cb = np.load(path, allow_pickle=True).item()
-    #     print(cb)
-
-    """
-    Method 2: collect A* trajectories with only primitive actions, randomly dissect trajectories
-    to form skills (length from 2 to 10), save the trajectories and skill frequencies plus primitive
-    action frequencies as codebook:
-    {
-        'trajectories': ['1001 201 222 22012', '1001 222 2012', etc.],
-        '0': 7, # primitive count
-        '1': 9, # primitive count
-        '2': 23, # primitive count
-        '1001': 2,
-        '201': 1, etc.
-    }
-    """
-
-    # env.seed(256)
-    # trajectories = collect_trajectories(env, num=100, show=False)
-
-    # for i in range(20):
-    #
-    #     # code_book = build_codebook_method_2(trajectories, skill_length_range=range(2,7))
-    #     # print(code_book)
-    #
-    #     path = os.path.join('./data/method2_high_var_2_to_6', 'code_book'+str(i+1)+'.npy')
-    #     # np.save(path, code_book)
-    #     # print('Codebook saved to %s' % path)
-    #
-    #     cbb = np.load(path, allow_pickle=True).item()
-    #     _, cb = preprocess_codebook(cbb)
-    #     print(cb)
-    #
-    #     # ensure it's sampling according to the biased distribution
-    #     analysis = {}
-    #     total = 0
-    #     for k, v in cb.items():
-    #         if len(k) not in analysis:
-    #             analysis[len(k)] = v
-    #         else:
-    #             analysis[len(k)] += v
-    #         total += v
-    #     total -= analysis.pop(1)  # exclude primitive actions
-    #     for k, v in analysis.items():
-    #         analysis[k] = v/total
-    #     print(analysis)
-
-    """Evaluate codebooks"""
-
-    # # env.seed(111)
-    # codebooks = discover_codebooks('./data/method2_high_var_2_to_6')
-    #
-    # # codebooks = [(file_name, preprocess_codebook(codebook)[1]) for file_name, codebook in codebooks]
-    # # solutions = evaluate_codebook(env, codebooks)
-    # #
-    # # for file, dict in solutions.items():
-    # #
-    # #     path = './data/method2_high_var_2_to_6/evaluations/trajectories_' + file
-    # #     np.save(path, dict)
-    # #     print('Trajectories saved to %s' % path)
-    #
-    # files = [file for file, _ in codebooks]
-    # for file in files:
-    #     path = './data/method2_high_var_2_to_6/evaluations/trajectories_' + file
-    #     dict = np.load(path, allow_pickle=True).item()
-    #     print(dict)
+    # collect_data_method2(env, data_folder, range(1,7))
+    evaluate_data(env, data_folder)

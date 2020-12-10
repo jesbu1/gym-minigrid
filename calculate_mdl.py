@@ -23,8 +23,6 @@ def preprocess_codebook(codebook):
     trajectories = codebook.pop('trajectories')
     codebook_with_spaces = {}
     for key, value in codebook.items():
-        #if key in {'0', '1', '2'}:
-        #    continue  # skip primitive actions (counted in method 2)
         if key == 'probabilities' or key == 'length_range':
             continue  # skip these
         if value > 0:
