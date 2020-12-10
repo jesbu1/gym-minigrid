@@ -16,7 +16,7 @@ def discover_evaluations(location):
             codebooks.append((codebook_file, codebook.item())) #.item() to extract dictionary from 0d array
     return codebooks
 
-def process_evaluation(evaluation, codec, tree_bits, name, length_range, probabilities, trajectory_dict):
+def process_evaluation(evaluation, codec, tree_bits, name, trajectory_dict):
     """
     Adds to trajectory_dict the mappings from start/end positions to the
     various metrics stored for the associated codebook
@@ -43,10 +43,6 @@ def process_evaluation(evaluation, codec, tree_bits, name, length_range, probabi
                 trajectory_dict[traj_type][trajectory_id][name] = metrics
     process_trajectories(train_trajectories, 'train')
     process_trajectories(test_trajectories, 'test')
-    #for i, length in enumerate(length_range):
-    #    if length not in trajectory_dict['probabilities']:
-    #        trajectory_dict['probabilities'][length] = {}
-    #    trajectory_dict['probabilities'][length][name] = probabilities[i]
         
 
 
@@ -80,7 +76,7 @@ if __name__ == "__main__":
     for codebook_name, evaluation in evaluations:
         original_name = codebook_name.replace("trajectories_", "")
         codebook_info = codebook_dict[original_name]
-        process_evaluation(evaluation, codebook_info['codec'], codebook_info['tree_bits'], original_name, codebook_info['length_range'], codebook_info['probabilities'], trajectory_dict) 
+        process_evaluation(evaluation, codebook_info['codec'], codebook_info['tree_bits'], original_name, trajectory_dict) 
     #print(trajectory_dict.keys(), trajectory_dict['test'].keys())
 
     aggregate_stats = []
