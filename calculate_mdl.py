@@ -17,15 +17,14 @@ def discover_codebooks(location):
 
 def preprocess_codebook(codebook):
     """
-    Removes trajectories from keys and adds a space to each skill/symbol so
-    as to be able to encode the trajectories. Also removes skills with 0
-    frequency.
+    Removes trajectories from keys and puts the trajectories into single
+    symbol list format. Also removes skills with 0 frequency.
     """
     trajectories = codebook.pop('trajectories')
     codebook_with_spaces = {}
     for key, value in codebook.items():
-        if key in {'0', '1', '2'}:
-            continue  # skip primitive actions (counted in method 2)
+        #if key in {'0', '1', '2'}:
+        #    continue  # skip primitive actions (counted in method 2)
         if value > 0:
             codebook_with_spaces[key] = value
 
@@ -56,15 +55,15 @@ def calculate_codebook_dl(codebook):
     encoded = codec.encode(trajectories)
 
     trajectory_symbol_set = set(trajectories) 
-    number_of_bits = 0
-    # Calculate the number of bits to encode the symbols in the trajectory
+    tree_bits = 0
+    # Calculate the number of bits to send the tree 
     for symbol, (bits, val) in codec._table.items():
         if symbol in trajectory_symbol_set:
-            number_of_bits += len(symbol.encode('utf-8')) * 8
-            number_of_bits += bits
-    dl = len(encoded)*8 + number_of_bits # * 8 for byte to bit conversion
+            tree_bits += len(symbol.encode('utf-8')) * 8
+            tree_bits += bits
+    dl = len(encoded)*8 + tree_bits # * 8 for byte to bit conversion
     uncompressed_len = len("".join(trajectories).encode('utf-8')) * 8
-    return dl, uncompressed_len 
+    return dl, tree_bits, codec, uncompressed_len 
 
 
 if __name__ == "__main__":
@@ -76,9 +75,9 @@ if __name__ == "__main__":
     codebooks = discover_codebooks(args.location)
     codebook_name_dl_tuples = []
     for codebook in codebooks:
-        dl, uncompressed_len = calculate_codebook_dl(codebook[1])
-        codebook_name_dl_tuples.append((codebook[0], dl, uncompressed_len))
+        dl, tree_bits, codec, uncompressed_len = calculate_codebook_dl(codebook[1])
+        codebook_name_dl_tuples.append((codebook[0], dl, tree_bits, codec, uncompressed_len))
     sorted_codebooks_by_dl = sorted(codebook_name_dl_tuples, key=lambda x: x[1])
-    for name, dl, uncompressed_len in sorted_codebooks_by_dl:
+    for name, dl, tree_bits, codec, uncompressed_len in sorted_codebooks_by_dl:
         #print(name, dl, uncompressed_len)
         print(name, dl)
