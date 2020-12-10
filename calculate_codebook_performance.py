@@ -16,7 +16,7 @@ def discover_evaluations(location):
             codebooks.append((codebook_file, codebook.item())) #.item() to extract dictionary from 0d array
     return codebooks
 
-def process_evaluation(evaluation, codec, tree_bits, name, trajectory_dict):
+def process_evaluation(evaluation, codec, tree_bits, name, length_range, probabilities, trajectory_dict):
     """
     Adds to trajectory_dict the mappings from start/end positions to the
     various metrics stored for the associated codebook
@@ -43,6 +43,10 @@ def process_evaluation(evaluation, codec, tree_bits, name, trajectory_dict):
                 trajectory_dict[traj_type][trajectory_id][name] = metrics
     process_trajectories(train_trajectories, 'train')
     process_trajectories(test_trajectories, 'test')
+    #for i, length in enumerate(length_range):
+    #    if length not in trajectory_dict['probabilities']:
+    #        trajectory_dict['probabilities'][length] = {}
+    #    trajectory_dict['probabilities'][length][name] = probabilities[i]
         
 
 
@@ -56,33 +60,39 @@ if __name__ == "__main__":
     codebook_name_dl_tuples = []
     codebook_dict = {}
     for codebook in codebooks:
+        length_range = codebook[1].pop('length_range')
+        probabilities = codebook[1].pop('probabilities')
         dl, tree_bits, codec, uncompressed_len = calculate_codebook_dl(codebook[1])
-        codebook_name_dl_tuples.append((codebook[0], dl, tree_bits, codec, uncompressed_len))
+        codebook_name_dl_tuples.append((codebook[0], dl, tree_bits, codec, length_range, probabilities, uncompressed_len))
     sorted_codebooks_by_dl = sorted(codebook_name_dl_tuples, key=lambda x: x[1])
-    for name, dl, tree_bits, codec, uncompressed_len in sorted_codebooks_by_dl:
+    for name, dl, tree_bits, codec, length_range, probabilities, uncompressed_len in sorted_codebooks_by_dl:
         #print(name, dl, uncompressed_len)
         print(name, dl)
         codebook_dict[name] = dict(description_length=dl, 
                                    tree_bits=tree_bits, 
                                    codec=codec, 
+                                   length_range=length_range,
+                                   probabilities=probabilities,
                                    uncompressed_len=uncompressed_len)
 
     evaluations = discover_evaluations(os.path.join(args.location, 'evaluations'))
-    trajectory_dict = dict(train={}, test={})
+    trajectory_dict = dict(train={}, test={}, probabilities={})
     for codebook_name, evaluation in evaluations:
         original_name = codebook_name.replace("trajectories_", "")
         codebook_info = codebook_dict[original_name]
-        process_evaluation(evaluation, codebook_info['codec'], codebook_info['tree_bits'], original_name, trajectory_dict) 
+        process_evaluation(evaluation, codebook_info['codec'], codebook_info['tree_bits'], original_name, codebook_info['length_range'], codebook_info['probabilities'], trajectory_dict) 
     #print(trajectory_dict.keys(), trajectory_dict['test'].keys())
 
     aggregate_stats = []
 
     pd_index = []
     pd_dict = {'codebook_dl': []}
+    length_set = set()
     for name, dl, *_ in sorted_codebooks_by_dl:
         pd_index.append(name)
         def accumulate_values(traj_type):
-            values_to_track = ['num_primitive_actions', 'num_abstract_actions', 'code_length', 'description_length', 'node_cost']
+            #values_to_track = ['num_primitive_actions', 'num_abstract_actions', 'code_length', 'description_length', 'node_cost']
+            values_to_track = ['node_cost']
             values = [0 for _ in values_to_track] 
             for start_end_pair in trajectory_dict[traj_type].keys():
                 for i, value_name in enumerate(values_to_track):
@@ -97,9 +107,21 @@ if __name__ == "__main__":
         accumulate_values('train')
         accumulate_values('test')
         pd_dict['codebook_dl'].append(dl)
+        for i, length in enumerate(codebook_dict[name]['length_range']):
+            length = str(length)
+            length_set.add(length)
+            if length not in pd_dict:
+                pd_dict[length] = []
+            pd_dict[length].append(codebook_dict[name]['probabilities'][i])
     df = pd.DataFrame(data=pd_dict, index=pd_index)
     for column in df.columns:
-        if column != 'codebook_dl':
+        if column != 'codebook_dl' and column not in length_set:
             correlation = df['codebook_dl'].corr(df[column])
             print(column, correlation)
+    for col1 in df.columns:
+        if col1 in length_set:
+            for col2 in df.columns:
+                if col2 not in length_set:
+                    correlation = df[col1].corr(df[col2])
+                    print(col1, col2, correlation)
     df.to_csv(os.path.join(args.location, 'analysis.csv'))
