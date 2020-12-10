@@ -560,14 +560,14 @@ if __name__ == "__main__":
     """
 
     # env.seed(256)
-    # # trajectories = collect_trajectories(env, num=250, show=False)
+    # trajectories = collect_trajectories(env, num=100, show=False)
+
+    # for i in range(20):
     #
-    # for i in range(20):  # 20 sets of codebooks from 10 random splitting of the same trajectories
+    #     # code_book = build_codebook_method_2(trajectories, skill_length_range=range(2,7))
+    #     # print(code_book)
     #
-    #     # code_book = build_codebook_method_2(trajectories)
-    #     # # print(code_book)
-    #
-    #     path = os.path.join('./data/method2_high_var', 'code_book'+str(i+1)+'.npy')
+    #     path = os.path.join('./data/method2_high_var_2_to_6', 'code_book'+str(i+1)+'.npy')
     #     # np.save(path, code_book)
     #     # print('Codebook saved to %s' % path)
     #
@@ -576,35 +576,35 @@ if __name__ == "__main__":
     #     print(cb)
     #
     #     # ensure it's sampling according to the biased distribution
-    #     # analysis = {}
-    #     # total = 0
-    #     # for k, v in cb.items():
-    #     #     if len(k) not in analysis:
-    #     #         analysis[len(k)] = v
-    #     #     else:
-    #     #         analysis[len(k)] += v
-    #     #     total += v
-    #     # total -= analysis.pop(1)  # exclude primitive actions
-    #     # for k, v in analysis.items():
-    #     #     analysis[k] = v/total
-    #     # print(analysis)
+    #     analysis = {}
+    #     total = 0
+    #     for k, v in cb.items():
+    #         if len(k) not in analysis:
+    #             analysis[len(k)] = v
+    #         else:
+    #             analysis[len(k)] += v
+    #         total += v
+    #     total -= analysis.pop(1)  # exclude primitive actions
+    #     for k, v in analysis.items():
+    #         analysis[k] = v/total
+    #     print(analysis)
 
     """Evaluate codebooks"""
 
-    # env.seed(111)
-    # codebooks = discover_codebooks('./data/method2_high_var')
+    # # env.seed(111)
+    # codebooks = discover_codebooks('./data/method2_high_var_2_to_6')
     #
     # # codebooks = [(file_name, preprocess_codebook(codebook)[1]) for file_name, codebook in codebooks]
     # # solutions = evaluate_codebook(env, codebooks)
     # #
     # # for file, dict in solutions.items():
     # #
-    # #     path = './data/method2_high_var/evaluations/trajectories_' + file
+    # #     path = './data/method2_high_var_2_to_6/evaluations/trajectories_' + file
     # #     np.save(path, dict)
     # #     print('Trajectories saved to %s' % path)
     #
     # files = [file for file, _ in codebooks]
     # for file in files:
-    #     path = './data/method2_high_var/evaluations/trajectories_' + file
+    #     path = './data/method2_high_var_2_to_6/evaluations/trajectories_' + file
     #     dict = np.load(path, allow_pickle=True).item()
     #     print(dict)
