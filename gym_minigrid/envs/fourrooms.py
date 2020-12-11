@@ -14,7 +14,8 @@ class FourRoomsEnv(MiniGridEnv):
     def __init__(self, agent_pos=None, goal_pos=None):
         self._agent_default_pos = agent_pos
         self._goal_default_pos = goal_pos
-        super().__init__(grid_size=19, max_steps=100)
+        super().__init__(grid_size=38, max_steps=200)
+        # for original fourrooms, change back to (grid_size=19, max_steps=100)
 
     def _gen_grid(self, width, height):
         # Create the grid

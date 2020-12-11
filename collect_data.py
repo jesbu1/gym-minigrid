@@ -164,7 +164,7 @@ def a_star(env, skills=None, codebook=None):
     return solution, cost
 
 
-def show_init(count=1):
+def show_init(env, count=1):
     window = Window('Env No.%d' % (count))
     window.set_caption(env.mission)
     img = env.render('rgb_array', tile_size=32)
@@ -212,7 +212,7 @@ def collect_trajectories(env, skills=None, num=50, show=False, print_every=50):
             continue
 
         if show:
-            show_init(count=count)
+            show_init(env, count=count)
 
         actions, _ = a_star(env, skills=skills)
         trajectory = Trajectory(actions, env)
@@ -465,7 +465,7 @@ def evaluate_solution(solution, env):
     return len(agent_states)-1 == len(rewards) == len(solution) and rewards[-1] > 0 and is_done
 
 
-def evaluate_codebook(env, codebooks, num_test=100, num_train=50):
+def evaluate_codebook(env, codebooks, num_test=100, num_train=50, print_every=5):
     """
     input:
         env: env variable
@@ -479,7 +479,8 @@ def evaluate_codebook(env, codebooks, num_test=100, num_train=50):
             entry form: (str form of trajectory, a_star search cost, start_pos, goal_pos)
     """
 
-    count_train, count_test = 0, 0
+    start_time = dt.datetime.now()
+    count_train, count_test, count = 0, 0, 0
     solutions = {}
     for file, codebook in codebooks:
         solutions[file] = {'test': [], 'train': []}
@@ -500,6 +501,13 @@ def evaluate_codebook(env, codebooks, num_test=100, num_train=50):
                 traj = Trajectory(solution, env, simulate=True)
                 solutions[file]['train'].append((str(traj), cost, traj.start_pos, traj.goal_pos))
             count_train += 1
+
+        count += 1
+        if count % print_every == 0 and count != 0:
+            curr_time = dt.datetime.now()
+            time = (curr_time - start_time).total_seconds()
+            print('Total env tried: %d, test trajectories collected = %d, train trajectories collected = %d, time elapsed = %f sec'
+                  % (count, count_test, count_train, time))
 
     return solutions
 
@@ -558,7 +566,7 @@ def collect_data_method2(env,
         # cbb = np.load(path, allow_pickle=True).item()
         # _, cb = preprocess_codebook(cbb)
         # print(cb)
-
+        #
         # # ensure it's sampling according to the biased distribution
         # analysis = {}
         # total = 0
@@ -585,7 +593,7 @@ def evaluate_data(env, data_folder, seed=None):
     solutions = evaluate_codebook(env, codebooks)
     for file, dict in solutions.items():
         path = os.path.join(data_folder, 'evaluations', 'trajectories_' + file)
-        # np.save(path, dict)
+        np.save(path, dict)
         print('Trajectories saved to %s' % path)
 
     # files = [file for file, _ in codebooks_pre]
@@ -599,8 +607,9 @@ if __name__ == "__main__":
 
     env = gym.make("MiniGrid-FourRooms-v0")
     env = GoalPositionWrapper(env)
+    # show_init(env)
 
-    data_folder = './data/method2_high_var_1_to_6'
+    data_folder = './data/method2_high_var_large_2_to_10'
 
-    # collect_data_method2(env, data_folder, range(1,7))
-    evaluate_data(env, data_folder)
+    # collect_data_method2(env, data_folder, range(2,11))
+    # evaluate_data(env, data_folder)
