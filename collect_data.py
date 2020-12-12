@@ -545,6 +545,7 @@ def collect_data_method1(env, data_folder, seed=None, num_code_books=10, num_tra
 def collect_data_method2(env,
                          data_folder,
                          skill_length_range,
+                         num_skills,
                          seed=None,
                          num_code_books=20,
                          num_trajectories=100):
@@ -558,31 +559,19 @@ def collect_data_method2(env,
 
     trajectories = collect_trajectories(env, num=num_trajectories, show=False)
 
-    for i in range(num_code_books):
+    count = 0
+    while count < num_code_books:
 
         code_book = build_codebook_method_2(trajectories, skill_length_range)
         # print(code_book)
 
-        path = os.path.join(data_folder, 'code_book' + str(i + 1) + '.npy')
-        np.save(path, code_book)
-        print('Codebook saved to %s' % path)
+        if len(code_book) - 2 == num_skills:  # minus 2: 'length_range' & 'probabilities'
+            path = os.path.join(data_folder, 'code_book' + str(count + 1) + '.npy')
+            np.save(path, code_book)
+            print('Codebook saved to %s' % path)
 
-        # cbb = np.load(path, allow_pickle=True).item()
-        # _, cb = preprocess_codebook(cbb)
-        # print(cb)
-        #
-        # # ensure it's sampling according to the biased distribution
-        # analysis = {}
-        # total = 0
-        # for k, v in cb.items():
-        #     if len(k) not in analysis:
-        #         analysis[len(k)] = v
-        #     else:
-        #         analysis[len(k)] += v
-        #     total += v
-        # for k, v in analysis.items():
-        #     analysis[k] = v/total
-        # print(analysis)
+            count += 1
+
 
 
 def evaluate_data(env, data_folder, seed=None):
@@ -613,7 +602,7 @@ if __name__ == "__main__":
     env = GoalPositionWrapper(env)
     # show_init(env)
 
-    data_folder = './data/method3_2'
+    data_folder = './data/method4'
 
-    # collect_data_method2(env, data_folder, range(2,7), num_code_books=40)
+    # collect_data_method2(env, data_folder, range(2,7), 50, num_code_books=40)
     evaluate_data(env, data_folder)
