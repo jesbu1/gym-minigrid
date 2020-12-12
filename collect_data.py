@@ -467,7 +467,7 @@ def evaluate_solution(solution, env):
     return len(agent_states)-1 == len(rewards) == len(solution) and rewards[-1] > 0 and is_done
 
 
-def evaluate_codebook(env, codebooks, num_test=100, num_train=50, print_every=5):
+def evaluate_codebook(env, codebooks, num_test=500, num_train=500, print_every=50):
     """
     input:
         env: env variable
@@ -484,8 +484,10 @@ def evaluate_codebook(env, codebooks, num_test=100, num_train=50, print_every=5)
     start_time = dt.datetime.now()
     count_train, count_test, count = 0, 0, 0
     solutions = {}
+    skills = {}
     for file, codebook in codebooks:
         solutions[file] = {'test': [], 'train': []}
+        skills[file] = [list(map(int, skill)) for skill in codebook.keys()]
     while 1:
         if count_train >= num_train and count_test >= num_test:
             break
@@ -493,13 +495,13 @@ def evaluate_codebook(env, codebooks, num_test=100, num_train=50, print_every=5)
 
         if not training_valid(env) and count_test < num_test:  # in test set
             for file, codebook in codebooks:
-                solution, cost = a_star(env, codebook=codebook)
+                solution, cost = a_star(env, skills=skills[file])
                 traj = Trajectory(solution, env, simulate=True)  # simulate without interacting with env
                 solutions[file]['test'].append((str(traj), cost, traj.start_pos, traj.goal_pos))
             count_test += 1
         elif training_valid(env) and count_train < num_train:  # in train set
             for file, codebook in codebooks:
-                solution, cost = a_star(env, codebook=codebook)
+                solution, cost = a_star(env, skills=skills[file])
                 traj = Trajectory(solution, env, simulate=True)
                 solutions[file]['train'].append((str(traj), cost, traj.start_pos, traj.goal_pos))
             count_train += 1
@@ -611,7 +613,7 @@ if __name__ == "__main__":
     env = GoalPositionWrapper(env)
     # show_init(env)
 
-    data_folder = './data/method3'
+    data_folder = './data/method3_2'
 
-    # collect_data_method2(env, data_folder, range(2,7))
-    # evaluate_data(env, data_folder)
+    # collect_data_method2(env, data_folder, range(2,7), num_code_books=40)
+    evaluate_data(env, data_folder)
