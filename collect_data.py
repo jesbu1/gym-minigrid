@@ -165,6 +165,7 @@ def a_star(env, skills=None, codebook=None):
 
     return solution, cost
 
+
 def a_star_parallel(env, out_q, skills=None, codebook=None, name=None):
 
     agent_pos = env.agent_pos
@@ -238,6 +239,7 @@ def a_star_parallel(env, out_q, skills=None, codebook=None, name=None):
 
     output_dict = dict(name = (solution, cost))
     out_q.put(output_dict)
+
 
 def show_init(env, count=1):
     window = Window('Env No.%d' % (count))
@@ -541,6 +543,7 @@ def evaluate_solution(solution, env):
 
     return len(agent_states)-1 == len(rewards) == len(solution) and rewards[-1] > 0 and is_done
 
+
 def evaluate_codebook_parallel(env, codebooks, num_test=500, num_train=500, print_every=50):
     """
     input:
@@ -627,6 +630,7 @@ def evaluate_codebook_parallel(env, codebooks, num_test=500, num_train=500, prin
                   % (count, count_test, count_train, time))
 
     return solutions
+
 
 def evaluate_codebook(env, codebooks, num_test=500, num_train=500, print_every=50):
     """
@@ -720,19 +724,24 @@ def collect_data_method2(env,
 
     trajectories = collect_trajectories(env, num=num_trajectories, show=False)
 
+    a = []
     count = 0
     while count < num_code_books:
 
         code_book = build_codebook_method_2(trajectories, skill_length_range)
         # print(code_book)
 
-        if len(code_book) - 2 == num_skills:  # minus 2: 'length_range' & 'probabilities'
-            path = os.path.join(data_folder, 'code_book' + str(count + 1) + '.npy')
-            np.save(path, code_book)
-            print('Codebook saved to %s' % path)
+        # if len(code_book) - 2 == num_skills:  # minus 2: 'length_range' & 'probabilities'
+        #     path = os.path.join(data_folder, 'code_book' + str(count + 1) + '.npy')
+        #     np.save(path, code_book)
+        #     print('Codebook saved to %s' % path)
+        #
+        #     count += 1
 
-            count += 1
+        a.append(len(code_book) - 2)
+        count += 1
 
+    print(np.average(a))
 
 
 def evaluate_data(env, data_folder, seed=None):
@@ -757,6 +766,16 @@ def evaluate_data(env, data_folder, seed=None):
     #     print(dict)
 
 
+def test(data_folder):
+    codebooks_pre = discover_codebooks(data_folder)
+    codebooks = [(file_name, preprocess_codebook(codebook)[1]) for file_name, codebook in codebooks_pre]
+    for _, codebook in codebooks:
+        times_frequency = 0
+        for k, v in codebook.items():
+            times_frequency += len(k)*v
+        print(times_frequency)
+
+
 if __name__ == "__main__":
 
     env = gym.make("MiniGrid-FourRooms-v0")
@@ -765,5 +784,6 @@ if __name__ == "__main__":
 
     data_folder = './data/method4'
 
-    # collect_data_method2(env, data_folder, range(2,7), 50, num_code_books=40)
-    evaluate_data(env, data_folder)
+    collect_data_method2(env, data_folder, range(2,7), 50, num_code_books=40, num_trajectories=1000)
+    # evaluate_data(env, data_folder)
+    # test(data_folder)
