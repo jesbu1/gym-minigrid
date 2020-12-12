@@ -566,7 +566,7 @@ def evaluate_codebook_parallel(env, codebooks, num_test=500, num_train=500, prin
     count_train, count_test, count = 0, 0, 0
     solutions = {}
     skills = {}
-    for file, codebook in codebooks:
+    for file, codebook, _ in codebooks:
         solutions[file] = {'test': [], 'train': []}
         skills[file] = [list(map(int, skill)) for skill in codebook.keys()]
     while 1:
@@ -656,7 +656,7 @@ def evaluate_codebook(env, codebooks, num_test=500, num_train=500, print_every=5
     count_train, count_test, count = 0, 0, 0
     solutions = {}
     skills = {}
-    for file, codebook in codebooks:
+    for file, codebook, _ in codebooks:
         solutions[file] = {'test': [], 'train': []}
         skills[file] = [list(map(int, skill)) for skill in codebook.keys()]
     while 1:
