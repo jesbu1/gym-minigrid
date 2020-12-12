@@ -1,4 +1,5 @@
 import gym_minigrid
+import multiprocessing as mp
 from gym_minigrid.wrappers import *
 import gym
 from heapq import heappush, heappop
@@ -11,6 +12,7 @@ import numpy as np
 from gym_minigrid.window import Window
 from calculate_mdl import preprocess_codebook, discover_codebooks
 
+NUM_PARALLEL_THREADS = 8
 
 # not consistent
 def get_h(entry, goal_pos):
@@ -163,6 +165,79 @@ def a_star(env, skills=None, codebook=None):
 
     return solution, cost
 
+def a_star_parallel(env, out_q, skills=None, codebook=None, name=None):
+
+    agent_pos = env.agent_pos
+    goal_pos = env.goal_pos
+    agent_dir = env.agent_dir
+
+    open = []
+    closed = []
+    solution = None
+
+    init_entry = (agent_pos[0], agent_pos[1], agent_dir)
+    init_h = get_h(init_entry, goal_pos)
+    init_f = 0 + init_h
+    # print('Agent and goal position:', init_entry, goal_pos)
+
+    counter = count()
+
+    heappush(open, [init_f, next(counter), (init_entry, [])])  # f, counter, ((x, y, dir), action_seq)
+    open_dict = {init_entry: init_f}  # (x, y, dir) => f
+
+    if skills is None and codebook is None:
+        skills = [0, 1, 2]  # primitive actions: left, right, forward
+    elif skills is None and codebook is not None:
+        skills = [list(map(int, skill)) for skill in codebook.keys()]  # convert '1011' to [1,0,1,1]
+
+    cost = 0
+
+    while open:
+
+        curr_f, _, (curr_entry, curr_seq) = heappop(open)
+        curr_h = get_h(curr_entry, goal_pos)
+        curr_g = curr_f - curr_h
+
+        if curr_entry in closed:
+            continue
+
+        closed.append(curr_entry)
+
+        if finished(curr_entry, goal_pos):
+            solution = curr_seq
+            break
+
+        for action in skills:
+            new_entry = None
+            if isinstance(action, int): # primitive actions
+                new_entry = one_step(curr_entry, action)
+                if not is_valid(new_entry):
+                    new_entry = curr_entry
+            elif isinstance(action, list):
+                new_entry = curr_entry
+                for a in action: # action: [a1, a2, ...]
+                    next_entry = one_step(new_entry, a)
+                    if is_valid(next_entry):
+                        new_entry = next_entry
+
+            new_h = get_h(new_entry, goal_pos)
+            new_g = curr_g + 1
+            new_f = new_g + new_h
+            new_seq = copy.deepcopy(curr_seq)
+            new_seq.append(action)
+
+            if new_entry in open_dict:
+                prev_f = open_dict[new_entry]
+                if new_f < prev_f:
+                    open_dict[new_entry] = new_f
+                    heappush(open, [new_f, next(counter), (new_entry, new_seq)])
+            elif new_entry not in closed and new_entry not in open_dict:
+                cost += 1
+                open_dict[new_entry] = new_f
+                heappush(open, [new_f, next(counter), (new_entry, new_seq)])
+
+    output_dict = dict(name = (solution, cost))
+    out_q.put(output_dict)
 
 def show_init(env, count=1):
     window = Window('Env No.%d' % (count))
@@ -466,6 +541,92 @@ def evaluate_solution(solution, env):
 
     return len(agent_states)-1 == len(rewards) == len(solution) and rewards[-1] > 0 and is_done
 
+def evaluate_codebook_parallel(env, codebooks, num_test=500, num_train=500, print_every=50):
+    """
+    input:
+        env: env variable
+        codebooks: pre-processed codebook to evaluate
+        num_test: number of test start/end pairs to evaluate,
+        num_train: number of train start/end pairs to evaluate
+
+    output:
+        solutions: dict storing num_test trajectories for test set, num_train trajectories for train set
+            for each codebook in codebooks
+            entry form: (str form of trajectory, a_star search cost, start_pos, goal_pos)
+    """
+
+    start_time = dt.datetime.now()
+    count_train, count_test, count = 0, 0, 0
+    solutions = {}
+    skills = {}
+    for file, codebook in codebooks:
+        solutions[file] = {'test': [], 'train': []}
+        skills[file] = [list(map(int, skill)) for skill in codebook.keys()]
+    while 1:
+        if count_train >= num_train and count_test >= num_test:
+            break
+        env.reset()
+
+        if not training_valid(env) and count_test < num_test:  # in test set
+            out_q = mp.Queue()
+            procs = []
+            result_dict = {}
+            for i, (file, codebook) in enumerate(codebooks):
+                if i % NUM_PARALLEL_THREADS == 0:
+                    for proc in procs:
+                        result_dict.update(out_q.get())
+                        proc.join()
+                    procs = []
+                    
+                p = mp.Process(
+                    target=a_star_parallel,
+                    kwargs={'env':env, 'out_q':out_q, 'skills':skills[file], 'name':file},
+                )
+                procs.append(p)
+                p.start()
+            
+            for proc in procs:
+                result_dict.update(out_q.get())
+                proc.join()
+
+            for file, (solution, cost) in result_dict.items():
+                traj = Trajectory(solution, env, simulate=True)  # simulate without interacting with env
+                solutions[file]['test'].append((str(traj), cost, traj.start_pos, traj.goal_pos))
+            count_test += 1
+        elif training_valid(env) and count_train < num_train:  # in train set
+            out_q = mp.Queue()
+            procs = []
+            result_dict = {}
+            for i, (file, codebook) in enumerate(codebooks):
+                if i % NUM_PARALLEL_THREADS == 0:
+                    for proc in procs:
+                        result_dict.update(out_q.get())
+                        proc.join()
+                    procs = []
+                    
+                p = mp.Process(
+                    target=a_star_parallel,
+                    kwargs={'env':env, 'out_q':out_q, 'skills':skills[file], 'name':file},
+                )
+                procs.append(p)
+                p.start()
+            
+            for proc in procs:
+                result_dict.update(out_q.get())
+                proc.join()
+            for file, (solution, cost) in result_dict.items():
+                traj = Trajectory(solution, env, simulate=True)
+                solutions[file]['train'].append((str(traj), cost, traj.start_pos, traj.goal_pos))
+            count_train += 1
+
+        count += 1
+        if count % print_every == 0 and count != 0:
+            curr_time = dt.datetime.now()
+            time = (curr_time - start_time).total_seconds()
+            print('Total env tried: %d, test trajectories collected = %d, train trajectories collected = %d, time elapsed = %f sec'
+                  % (count, count_test, count_train, time))
+
+    return solutions
 
 def evaluate_codebook(env, codebooks, num_test=500, num_train=500, print_every=50):
     """

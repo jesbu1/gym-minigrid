@@ -80,7 +80,7 @@ if __name__ == "__main__":
 
     # building a pandas dataframe
     pd_index = []
-    pd_dict = {'codebook_dl': []}
+    pd_dict = {'codebook_dl': [], 'num_symbols': []}
     length_set = set()
     for name, dl, *_ in sorted_codebooks_by_dl:
         pd_index.append(name)
@@ -107,6 +107,7 @@ if __name__ == "__main__":
             if length not in pd_dict:
                 pd_dict[length] = []
             pd_dict[length].append(codebook_dict[name]['probabilities'][i])
+        pd_dict['num_symbols'].append(len(codebook_dict[name]['codec'].get_code_table()))
     df = pd.DataFrame(data=pd_dict, index=pd_index)
 
     #printing correlation of codebook description length and other metrics
@@ -125,9 +126,9 @@ if __name__ == "__main__":
     """
     # correlation between primitive and abstract actions
     for col1 in df.columns:
-        if "test" in col1:
+        if "train" in col1:
             for col2 in df.columns:
-                if "test" in col2 and (col1 != col2):
+                if "train" in col2 and (col1 != col2):
                     correlation = df[col1].corr(df[col2])
                     print(col1, col2, correlation)
     df.to_csv(os.path.join(args.location, 'analysis.csv'))

@@ -65,6 +65,7 @@ def calculate_codebook_dl(codebook):
     uncompressed_len = len("".join(trajectories).encode('utf-8')) * 8
     #return dl, tree_bits, codec, uncompressed_len 
     return len(encoded) * 8, tree_bits, codec, uncompressed_len 
+    #return tree_bits, tree_bits, codec, uncompressed_len 
 
 
 if __name__ == "__main__":
