@@ -135,7 +135,7 @@ def a_star(env, skills=None, codebook=None, length_range=None):
             break
 
         for action in skills:
-            if action not in length_range:
+            if len(action) not in length_range:
                 continue
             new_entry = None
             if isinstance(action, int): # primitive actions
@@ -211,7 +211,7 @@ def a_star_parallel(env, out_q, skills=None, codebook=None, name=None, length_ra
             break
 
         for action in skills:
-            if action not in length_range:
+            if len(action) not in length_range:
                 continue
             new_entry = None
             if isinstance(action, int): # primitive actions
@@ -751,7 +751,6 @@ def evaluate_data(env, data_folder, seed=None):
 
     codebooks_pre = discover_codebooks(data_folder)
 
-    import pdb; pdb.set_trace()
     codebooks = [(file_name, preprocess_codebook(codebook)[1], codebook['length_range']) for file_name, codebook in codebooks_pre]
     solutions = evaluate_codebook_parallel(env, codebooks)
     for file, dict in solutions.items():
