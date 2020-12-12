@@ -727,24 +727,17 @@ def collect_data_method2(env,
 
     trajectories = collect_trajectories(env, num=num_trajectories, show=False)
 
-    a = []
     count = 0
     while count < num_code_books:
 
         code_book = build_codebook_method_2(trajectories, skill_length_range)
         # print(code_book)
 
-        # if len(code_book) - 2 == num_skills:  # minus 2: 'length_range' & 'probabilities'
-        #     path = os.path.join(data_folder, 'code_book' + str(count + 1) + '.npy')
-        #     np.save(path, code_book)
-        #     print('Codebook saved to %s' % path)
-        #
-        #     count += 1
-
-        a.append(len(code_book) - 2)
-        count += 1
-
-    print(np.average(a))
+        if len(code_book) - 2 == num_skills:  # minus 2: 'length_range' & 'probabilities'
+            path = os.path.join(data_folder, 'code_book' + str(count + 1) + '.npy')
+            np.save(path, code_book)
+            print('Codebook saved to %s' % path)
+            count += 1
 
 
 def evaluate_data(env, data_folder, seed=None):
@@ -785,8 +778,8 @@ if __name__ == "__main__":
     env = GoalPositionWrapper(env)
     # show_init(env)
 
-    data_folder = './data/method4'
+    data_folder = './data/method4_2'
 
-    collect_data_method2(env, data_folder, range(2,7), 50, num_code_books=40, num_trajectories=1000)
-    # evaluate_data(env, data_folder)
+    # collect_data_method2(env, data_folder, range(2,7), 100, num_code_books=40, num_trajectories=1000)
+    evaluate_data(env, data_folder)
     # test(data_folder)
