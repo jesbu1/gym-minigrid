@@ -235,6 +235,7 @@ class Trajectory:
         self.env = env
         self.actions = actions
 
+        self.cut_tail = ''  # stores cut tail after split_actions
         self.action_str = ''
         for action in self.actions:
             if isinstance(action, int):  # primitive actions
@@ -338,8 +339,12 @@ class Trajectory:
                 break
             length = np.random.choice(skill_length_range, p=biased_probabilities)
             skill = self.actions[index:index+length]
-            skill = ''.join(map(str, skill))
-            self.action_str += skill + ' '
+            if len(skill) in skill_length_range:
+                skill = ''.join(map(str, skill))
+                self.action_str += skill + ' '
+            else:
+                skill = ''.join(map(str, skill))
+                self.cut_tail += skill + ' '
             index += length
 
 
@@ -369,15 +374,12 @@ def build_codebook_method_1(trajectories, complete_skills):
     return code_book
 
 
-def build_codebook_method_2(trajectories, skill_length_range=None):
+def build_codebook_method_2(trajectories, skill_length_range):
     # code_book: {
     #     'trajectories': list of str representations of all trajectories,
     #     skill in str form: num of occurrences,
     # }
     code_book = {'trajectories': []}
-
-    if skill_length_range is None:
-        skill_length_range = range(2, 11)  # default lengths: from 2 to 10
 
     v = np.random.random_sample(len(skill_length_range))
     biased_probabilities = v / np.linalg.norm(v, ord=1)  # normalize
@@ -556,7 +558,7 @@ def collect_data_method2(env,
 
     for i in range(num_code_books):
 
-        code_book = build_codebook_method_2(trajectories, skill_length_range=skill_length_range)
+        code_book = build_codebook_method_2(trajectories, skill_length_range)
         # print(code_book)
 
         path = os.path.join(data_folder, 'code_book' + str(i + 1) + '.npy')
@@ -609,7 +611,7 @@ if __name__ == "__main__":
     env = GoalPositionWrapper(env)
     # show_init(env)
 
-    data_folder = './data/method2_high_var_large_2_to_10'
+    data_folder = './data/method3'
 
-    # collect_data_method2(env, data_folder, range(2,11))
+    # collect_data_method2(env, data_folder, range(2,7))
     # evaluate_data(env, data_folder)
