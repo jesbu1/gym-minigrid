@@ -114,12 +114,20 @@ if __name__ == "__main__":
         if column != 'codebook_dl' and column not in length_set:
             correlation = df['codebook_dl'].corr(df[column])
             print(column, correlation)
-
+    """
     #printing correlation of frequency of skill length and all metrics
     for col1 in df.columns:
         if col1 in length_set:
             for col2 in df.columns:
                 if col2 not in length_set:
+                    correlation = df[col1].corr(df[col2])
+                    print(col1, col2, correlation)
+    """
+    # correlation between primitive and abstract actions
+    for col1 in df.columns:
+        if "test" in col1:
+            for col2 in df.columns:
+                if "test" in col2 and (col1 != col2):
                     correlation = df[col1].corr(df[col2])
                     print(col1, col2, correlation)
     df.to_csv(os.path.join(args.location, 'analysis.csv'))
