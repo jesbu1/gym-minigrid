@@ -85,8 +85,8 @@ if __name__ == "__main__":
     for name, dl, *_ in sorted_codebooks_by_dl:
         pd_index.append(name)
         def accumulate_values(traj_type):
-            #values_to_track = ['num_primitive_actions', 'num_abstract_actions', 'code_length', 'description_length', 'node_cost']
-            values_to_track = ['node_cost']
+            values_to_track = ['num_primitive_actions', 'num_abstract_actions', 'code_length', 'description_length', 'node_cost']
+            #values_to_track = ['node_cost']
             values = [0 for _ in values_to_track] 
             for start_end_pair in trajectory_dict[traj_type].keys():
                 for i, value_name in enumerate(values_to_track):
