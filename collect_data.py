@@ -744,10 +744,10 @@ def evaluate_data(env, data_folder, seed=None):
     codebooks_pre = discover_codebooks(data_folder)
 
     codebooks = [(file_name, preprocess_codebook(codebook)[1]) for file_name, codebook in codebooks_pre]
-    solutions = evaluate_codebook(env, codebooks)
+    solutions = evaluate_codebook_parallel(env, codebooks)
     for file, dict in solutions.items():
         path = os.path.join(data_folder, 'evaluations', 'trajectories_' + file)
-        np.save(path, dict)
+        # np.save(path, dict)
         print('Trajectories saved to %s' % path)
 
     # files = [file for file, _ in codebooks_pre]
