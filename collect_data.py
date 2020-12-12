@@ -12,7 +12,7 @@ import numpy as np
 from gym_minigrid.window import Window
 from calculate_mdl import preprocess_codebook, discover_codebooks
 
-NUM_PARALLEL_THREADS = 8
+NUM_PARALLEL_THREADS = 12
 
 # not consistent
 def get_h(entry, goal_pos):
@@ -237,7 +237,7 @@ def a_star_parallel(env, out_q, skills=None, codebook=None, name=None):
                 open_dict[new_entry] = new_f
                 heappush(open, [new_f, next(counter), (new_entry, new_seq)])
 
-    output_dict = dict(name = (solution, cost))
+    output_dict = {name: (solution, cost)}
     out_q.put(output_dict)
 
 
@@ -576,8 +576,9 @@ def evaluate_codebook_parallel(env, codebooks, num_test=500, num_train=500, prin
             result_dict = {}
             for i, (file, codebook) in enumerate(codebooks):
                 if i % NUM_PARALLEL_THREADS == 0:
-                    for proc in procs:
+                    for _ in procs:
                         result_dict.update(out_q.get())
+                    for proc in procs:
                         proc.join()
                     procs = []
                     
@@ -588,10 +589,10 @@ def evaluate_codebook_parallel(env, codebooks, num_test=500, num_train=500, prin
                 procs.append(p)
                 p.start()
             
-            for proc in procs:
+            for _ in procs:
                 result_dict.update(out_q.get())
+            for proc in procs:
                 proc.join()
-
             for file, (solution, cost) in result_dict.items():
                 traj = Trajectory(solution, env, simulate=True)  # simulate without interacting with env
                 solutions[file]['test'].append((str(traj), cost, traj.start_pos, traj.goal_pos))
@@ -602,8 +603,9 @@ def evaluate_codebook_parallel(env, codebooks, num_test=500, num_train=500, prin
             result_dict = {}
             for i, (file, codebook) in enumerate(codebooks):
                 if i % NUM_PARALLEL_THREADS == 0:
-                    for proc in procs:
+                    for _ in procs:
                         result_dict.update(out_q.get())
+                    for proc in procs:
                         proc.join()
                     procs = []
                     
@@ -614,8 +616,9 @@ def evaluate_codebook_parallel(env, codebooks, num_test=500, num_train=500, prin
                 procs.append(p)
                 p.start()
             
-            for proc in procs:
+            for _ in procs:
                 result_dict.update(out_q.get())
+            for proc in procs:
                 proc.join()
             for file, (solution, cost) in result_dict.items():
                 traj = Trajectory(solution, env, simulate=True)
@@ -756,7 +759,7 @@ def evaluate_data(env, data_folder, seed=None):
     solutions = evaluate_codebook_parallel(env, codebooks)
     for file, dict in solutions.items():
         path = os.path.join(data_folder, 'evaluations', 'trajectories_' + file)
-        # np.save(path, dict)
+        np.save(path, dict)
         print('Trajectories saved to %s' % path)
 
     # files = [file for file, _ in codebooks_pre]
