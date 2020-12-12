@@ -92,7 +92,7 @@ def one_step(curr_entry, action):
     return new_entry
 
 
-def a_star(env, skills=None, codebook=None):
+def a_star(env, skills=None, codebook=None, length_range=None):
 
     agent_pos = env.agent_pos
     goal_pos = env.goal_pos
@@ -135,6 +135,8 @@ def a_star(env, skills=None, codebook=None):
             break
 
         for action in skills:
+            if action not in length_range:
+                continue
             new_entry = None
             if isinstance(action, int): # primitive actions
                 new_entry = one_step(curr_entry, action)
@@ -166,7 +168,7 @@ def a_star(env, skills=None, codebook=None):
     return solution, cost
 
 
-def a_star_parallel(env, out_q, skills=None, codebook=None, name=None):
+def a_star_parallel(env, out_q, skills=None, codebook=None, name=None, length_range=None):
 
     agent_pos = env.agent_pos
     goal_pos = env.goal_pos
@@ -209,6 +211,8 @@ def a_star_parallel(env, out_q, skills=None, codebook=None, name=None):
             break
 
         for action in skills:
+            if action not in length_range:
+                continue
             new_entry = None
             if isinstance(action, int): # primitive actions
                 new_entry = one_step(curr_entry, action)
@@ -574,17 +578,16 @@ def evaluate_codebook_parallel(env, codebooks, num_test=500, num_train=500, prin
             out_q = mp.Queue()
             procs = []
             result_dict = {}
-            for i, (file, codebook) in enumerate(codebooks):
+            for i, (file, codebook, length_range) in enumerate(codebooks):
                 if i % NUM_PARALLEL_THREADS == 0:
                     for _ in procs:
                         result_dict.update(out_q.get())
                     for proc in procs:
                         proc.join()
                     procs = []
-                    
                 p = mp.Process(
                     target=a_star_parallel,
-                    kwargs={'env':env, 'out_q':out_q, 'skills':skills[file], 'name':file},
+                    kwargs={'env':env, 'out_q':out_q, 'skills':skills[file], 'name':file, 'length_range': length_range},
                 )
                 procs.append(p)
                 p.start()
@@ -601,7 +604,7 @@ def evaluate_codebook_parallel(env, codebooks, num_test=500, num_train=500, prin
             out_q = mp.Queue()
             procs = []
             result_dict = {}
-            for i, (file, codebook) in enumerate(codebooks):
+            for i, (file, codebook, length_range) in enumerate(codebooks):
                 if i % NUM_PARALLEL_THREADS == 0:
                     for _ in procs:
                         result_dict.update(out_q.get())
@@ -611,7 +614,7 @@ def evaluate_codebook_parallel(env, codebooks, num_test=500, num_train=500, prin
                     
                 p = mp.Process(
                     target=a_star_parallel,
-                    kwargs={'env':env, 'out_q':out_q, 'skills':skills[file], 'name':file},
+                    kwargs={'env':env, 'out_q':out_q, 'skills':skills[file], 'name':file, 'length_range': length_range},
                 )
                 procs.append(p)
                 p.start()
@@ -662,14 +665,14 @@ def evaluate_codebook(env, codebooks, num_test=500, num_train=500, print_every=5
         env.reset()
 
         if not training_valid(env) and count_test < num_test:  # in test set
-            for file, codebook in codebooks:
-                solution, cost = a_star(env, skills=skills[file])
+            for file, codebook, length_range in codebooks:
+                solution, cost = a_star(env, skills=skills[file], length_range=length_range)
                 traj = Trajectory(solution, env, simulate=True)  # simulate without interacting with env
                 solutions[file]['test'].append((str(traj), cost, traj.start_pos, traj.goal_pos))
             count_test += 1
         elif training_valid(env) and count_train < num_train:  # in train set
-            for file, codebook in codebooks:
-                solution, cost = a_star(env, skills=skills[file])
+            for file, codebook, length_range in codebooks:
+                solution, cost = a_star(env, skills=skills[file], length_range=length_range)
                 traj = Trajectory(solution, env, simulate=True)
                 solutions[file]['train'].append((str(traj), cost, traj.start_pos, traj.goal_pos))
             count_train += 1
@@ -748,7 +751,8 @@ def evaluate_data(env, data_folder, seed=None):
 
     codebooks_pre = discover_codebooks(data_folder)
 
-    codebooks = [(file_name, preprocess_codebook(codebook)[1]) for file_name, codebook in codebooks_pre]
+    import pdb; pdb.set_trace()
+    codebooks = [(file_name, preprocess_codebook(codebook)[1], codebook['length_range']) for file_name, codebook in codebooks_pre]
     solutions = evaluate_codebook_parallel(env, codebooks)
     for file, dict in solutions.items():
         path = os.path.join(data_folder, 'evaluations', 'trajectories_' + file)

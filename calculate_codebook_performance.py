@@ -109,11 +109,11 @@ if __name__ == "__main__":
             pd_dict[length].append(codebook_dict[name]['probabilities'][i])
         pd_dict['num_symbols'].append(len(codebook_dict[name]['codec'].get_code_table()))
     df = pd.DataFrame(data=pd_dict, index=pd_index)
-
+    correlation_method = 'pearson'
     #printing correlation of codebook description length and other metrics
     for column in df.columns:
         if column != 'codebook_dl' and column not in length_set:
-            correlation = df['codebook_dl'].corr(df[column])
+            correlation = df['codebook_dl'].corr(df[column], method=correlation_method)
             print(column, correlation)
     """
     #printing correlation of frequency of skill length and all metrics
@@ -129,6 +129,6 @@ if __name__ == "__main__":
         if "train" in col1:
             for col2 in df.columns:
                 if "train" in col2 and (col1 != col2):
-                    correlation = df[col1].corr(df[col2])
+                    correlation = df[col1].corr(df[col2], method=correlation_method)
                     print(col1, col2, correlation)
     df.to_csv(os.path.join(args.location, 'analysis.csv'))
