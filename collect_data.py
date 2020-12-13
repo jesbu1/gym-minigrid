@@ -12,7 +12,7 @@ import numpy as np
 from gym_minigrid.window import Window
 from calculate_mdl import preprocess_codebook, discover_codebooks
 
-NUM_PARALLEL_THREADS = 15
+NUM_PARALLEL_THREADS = 12
 
 # not consistent
 def get_h(entry, goal_pos):
