@@ -12,7 +12,7 @@ import numpy as np
 from gym_minigrid.window import Window
 from calculate_mdl import preprocess_codebook, discover_codebooks
 
-NUM_PARALLEL_THREADS = 12
+NUM_PARALLEL_THREADS = 15
 
 # not consistent
 def get_h(entry, goal_pos):
@@ -781,7 +781,7 @@ if __name__ == "__main__":
     env = GoalPositionWrapper(env)
     # show_init(env)
 
-    data_folder = './data/method4_2'
+    data_folder = './data/method5'
 
     # collect_data_method2(env, data_folder, range(2,7), 100, num_code_books=40, num_trajectories=1000)
     evaluate_data(env, data_folder)
