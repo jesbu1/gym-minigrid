@@ -11,6 +11,8 @@ import datetime as dt
 import numpy as np
 from gym_minigrid.window import Window
 from calculate_mdl import preprocess_codebook, discover_codebooks
+from auto_experiments import *
+
 
 NUM_PARALLEL_THREADS = 12
 
