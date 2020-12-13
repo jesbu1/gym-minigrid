@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from collect_data import training_valid
 from gym_minigrid.minigrid import *
 from gym_minigrid.register import register
 import numpy as np
@@ -18,14 +19,15 @@ class FourRoomsSkillsEnv(MiniGridEnv):
         self._skills = skills
         self._agent_default_pos = agent_pos
         self._goal_default_pos = goal_pos
+        self.goal_pos = None
         grid_size = 19
         # for large fourrooms, change to (grid_size=38, max_steps=200)
         super().__init__(grid_size=grid_size, max_steps=100)
         self.action_space = spaces.Discrete(len(self._skills))
         self.observation_space = spaces.Box(
             # [agent_x, agent_y, agent_dir, goal_x, goal_y]
-            low = [0, 0, 0, 0, 0],
-            high = [grid_size - 1, grid_size - 1, 3, grid_size - 1, grid_size - 1]
+            low = np.array([0, 0, 0, 0, 0]),
+            high = np.array([grid_size - 1, grid_size - 1, 3, grid_size - 1, grid_size - 1])
         )
 
     def _gen_grid(self, width, height):
@@ -82,7 +84,7 @@ class FourRoomsSkillsEnv(MiniGridEnv):
 
     def step(self, action):
         total_reward = 0
-        actual_action = self._actions[action]
+        actual_action = self._skills[action]
         for primitive_action in actual_action:
             obs, reward, done, info = MiniGridEnv.step(self, primitive_action)
             if done:
@@ -93,7 +95,7 @@ class FourRoomsSkillsEnv(MiniGridEnv):
 
     def reset(self):
         # keep resetting MiniGrid until training_valid depending on train/test
-        while not training_valid(self):
+        while True: 
             # Current position and direction of the agent
             self.agent_pos = None
             self.agent_dir = None
@@ -116,6 +118,12 @@ class FourRoomsSkillsEnv(MiniGridEnv):
 
             # Step count since episode start
             self.step_count = 0
+            
+            # Generate goal
+            self.goal_pos = self.grid.find_goal()
+            
+            if training_valid(self):
+                break
 
         # Return observation
         return self.build_obs()
