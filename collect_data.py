@@ -775,6 +775,10 @@ def test(data_folder):
         print(times_frequency)
 
 
+def collect_data_rl():
+    pass
+
+
 if __name__ == "__main__":
 
     env = gym.make("MiniGrid-FourRooms-v0")

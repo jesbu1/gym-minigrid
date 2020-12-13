@@ -13,13 +13,14 @@ class FourRoomsSkillsEnv(MiniGridEnv):
     Can specify agent and goal position, if not it set at random.
     """
 
-    def __init__(self, train: bool, skills: list, agent_pos=None, goal_pos=None):
+    def __init__(self, train: bool, skills: list, agent_pos=None, goal_pos=None, visualize=False):
         # TODO: Remember to make sure skills are already removed according to length range
         self._train = train
         self._skills = skills
         self._agent_default_pos = agent_pos
         self._goal_default_pos = goal_pos
         self.goal_pos = None
+        self._visualize=visualize  # set True for visualization (see manual_control_skills.py)
         grid_size = 19
         # for large fourrooms, change to (grid_size=38, max_steps=200)
         super().__init__(grid_size=grid_size, max_steps=100)
@@ -87,11 +88,13 @@ class FourRoomsSkillsEnv(MiniGridEnv):
         actual_action = self._skills[action]
         for primitive_action in actual_action:
             obs, reward, done, info = MiniGridEnv.step(self, primitive_action)
-            if done:
-                total_reward += reward
-                break
             total_reward += reward
-        return self.build_obs(), reward, done, info
+            if done:
+                break
+        if self._visualize:
+            return (obs, self.build_obs()), total_reward, done, info
+        else:
+            return self.build_obs(), total_reward, done, info
 
     def reset(self):
         # keep resetting MiniGrid until training_valid depending on train/test
@@ -122,12 +125,16 @@ class FourRoomsSkillsEnv(MiniGridEnv):
             # Generate goal
             self.goal_pos = self.grid.find_goal()
             
-            if training_valid(self):
+            if not training_valid(self) ^ self._train:  # XNOR
+                obs = self.gen_obs()
                 break
 
         # Return observation
-        return self.build_obs()
-    
+        if self._visualize:
+            return (obs, self.build_obs())
+        else:
+            return self.build_obs()
+
     def build_obs(self):
         return np.concatenate((self.agent_pos, [self.agent_dir], self.goal_pos), axis=0)
 
