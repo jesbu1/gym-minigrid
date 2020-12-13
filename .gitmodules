@@ -4,3 +4,6 @@
 [submodule "rlkit"]
 	path = rlkit
 	url = git@github.com:jesbu1/rlkit.git
+[submodule "viskit"]
+	path = viskit
+	url = git@github.com:vitchyr/viskit.git

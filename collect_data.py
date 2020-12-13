@@ -13,6 +13,14 @@ from gym_minigrid.window import Window
 from calculate_mdl import preprocess_codebook, discover_codebooks
 from auto_experiments import *
 
+import gym
+import gym_minigrid
+from torch import nn as nn
+
+# RLKit related stuff
+#from rlkit.examples.dqn_and_double_dqn import experiment
+#from rlkit.rlkit.launchers.launcher_util import setup_logger
+
 
 NUM_PARALLEL_THREADS = 12
 
@@ -638,6 +646,44 @@ def evaluate_codebook_parallel(env, codebooks, num_test=500, num_train=500, prin
                   % (count, count_test, count_train, time))
 
     return solutions
+
+
+def run_rl(rl_name, train, skills):
+    """
+    input:
+        rl_name (str): name of the experiment
+        train (bool): whether or not to use training environments
+        skills (list): list of skills, where each skill is a list of integers from 0-2
+
+    output:
+        none
+    """
+    variant = dict(
+        algorithm="Double DQN",
+        version="normal",
+        replay_buffer_size=int(1E6),
+        algorithm_kwargs=dict(
+            num_epochs=3000,
+            num_eval_steps_per_epoch=5000,
+            num_trains_per_train_loop=1000,
+            num_expl_steps_per_train_loop=1000,
+            min_num_steps_before_training=1000,
+            max_path_length=100,
+            batch_size=256,
+        ),
+        trainer_kwargs=dict(
+            discount=0.99,
+            learning_rate=3E-4,
+        ),
+        env_kwargs=dict(
+            skills=skills,
+            train=train,
+        )
+    )
+    setup_logger(rl_name, variant=variant)
+    # ptu.set_gpu_mode(True)  # optionally set the GPU (default=False)
+    experiment(variant)
+
 
 
 def evaluate_codebook(env, codebooks, num_test=500, num_train=500, print_every=50):
