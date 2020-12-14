@@ -836,7 +836,7 @@ def collect_data_rl(data_folder, file_name, train):
     skills = [list(map(int, skill)) for skill in codebook.keys()]
 
     experiment_name = 'rl_' + file_name.replace('.npy', '')
-    run_rl(experiment_name, train, skills)
+    run_rl(experiment_name, os.path.join(data_folder, 'evaluations'), train, skills)
 
 
 if __name__ == "__main__":
