@@ -830,14 +830,25 @@ def test(data_folder):
         print(times_frequency)
 
 
-def collect_data_rl(data_folder, file_name, train):
-    # load codebook
-    codebook = np.load(os.path.join(data_folder, file_name), allow_pickle=True).item()
-    _, codebook = preprocess_codebook(codebook)
-    skills = [list(map(int, skill)) for skill in codebook.keys()]
+def collect_data_rl(data_folder, file_name, train, device_queue):
+    try:
+        time.sleep(random.uniform(0, 3))
+        gpu_id = device_queue.get()
 
-    experiment_name = 'rl_' + file_name.replace('.npy', '')
-    run_rl(experiment_name, os.path.join(os.getcwd(), data_folder, 'evaluations'), train, skills)
+        # load codebook
+        codebook = np.load(os.path.join(data_folder, file_name), allow_pickle=True).item()
+        _, codebook = preprocess_codebook(codebook)
+        skills = [list(map(int, skill)) for skill in codebook.keys()]
+
+        # run experiment
+        experiment_name = 'rl_' + file_name.replace('.npy', '')
+        run_rl(experiment_name, os.path.join(os.getcwd(), data_folder, 'evaluations'), train, skills, gpu_id)
+
+        device_queue.put(gpu_id)
+
+    except Exception as e:
+        logging.info(traceback.format_exc())
+        raise e
 
 
 if __name__ == "__main__":
