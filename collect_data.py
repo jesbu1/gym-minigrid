@@ -680,7 +680,7 @@ def run_rl(rl_name, logdir, train, skills, gpu_id, seed=None):
         ),
         trainer_kwargs=dict(
             discount=0.99,
-            learning_rate=3E-4,
+            learning_rate=3E-5,
         ),
         env_kwargs=dict(
             skills=skills,
