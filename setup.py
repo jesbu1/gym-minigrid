@@ -13,5 +13,7 @@ setup(
         'dahuffman==0.4.1',
         'torch==1.4.0',
         'torchvision==0.5.0',
+        'pathos',
+        'absl-py'
     ]
 )
