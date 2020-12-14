@@ -649,13 +649,14 @@ def evaluate_codebook_parallel(env, codebooks, num_test=500, num_train=500, prin
     return solutions
 
 
-def run_rl(rl_name, logdir, train, skills, num_seeds=3):
+def run_rl(rl_name, logdir, train, skills, gpu_id, num_seeds=3):
     """
     Runs 3 seeds of a DQN RL experiment on MiniGrid-FourRoomsSkills-v0
     input:
         rl_name (str): name of the experiment
         logdir (str): where to log to (make it an absolute path)
         train (bool): whether or not to use training environments
+        gpu_id (int): gpu id
         skills (list): list of skills, where each skill is a list of integers from 0-2
 
     output:
@@ -687,7 +688,7 @@ def run_rl(rl_name, logdir, train, skills, num_seeds=3):
             )
         )
         setup_logger(rl_name, log_dir=logdir, variant=variant)
-        ptu.set_gpu_mode(True)  # optionally set the GPU (default=False)
+        ptu.set_gpu_mode(True, gpu_id)  # optionally set the GPU (default=False)
         experiment(variant)
 
 
