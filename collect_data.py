@@ -685,7 +685,6 @@ def run_rl(rl_name, train, skills):
     experiment(variant)
 
 
-
 def evaluate_codebook(env, codebooks, num_test=500, num_train=500, print_every=50):
     """
     input:
@@ -799,7 +798,8 @@ def evaluate_data(env, data_folder, seed=None):
 
     codebooks_pre = discover_codebooks(data_folder)
 
-    codebooks = [(file_name, preprocess_codebook(codebook)[1], codebook['length_range']) for file_name, codebook in codebooks_pre]
+    codebooks = [(file_name, preprocess_codebook(codebook)[1], codebook['length_range'])
+                 for file_name, codebook in codebooks_pre]
     solutions = evaluate_codebook_parallel(env, codebooks)
     for file, dict in solutions.items():
         path = os.path.join(data_folder, 'evaluations', 'trajectories_' + file)
@@ -823,8 +823,14 @@ def test(data_folder):
         print(times_frequency)
 
 
-def collect_data_rl():
-    pass
+def collect_data_rl(data_folder, file_name, train):
+    # load codebook
+    codebook = np.load(os.path.join(data_folder, file_name), allow_pickle=True).item()
+    _, codebook = preprocess_codebook(codebook)
+    skills = [list(map(int, skill)) for skill in codebook.keys()]
+
+    experiment_name = 'rl_' + file_name.replace('.npy', '')
+    run_rl(experiment_name, train, skills)
 
 
 if __name__ == "__main__":
