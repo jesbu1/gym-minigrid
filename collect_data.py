@@ -664,7 +664,7 @@ def run_rl(rl_name, logdir, train, skills, num_seeds=3):
     seeds = [random.randint(0, 10000) for _ in range(num_seeds)]
     for seed in seeds:
         variant = dict(
-            algorithm="Double DQN",
+            algorithm="DQN",
             version="normal",
             replay_buffer_size=int(1E6),
             seed=seed,
