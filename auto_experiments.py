@@ -31,10 +31,11 @@ def run(which_gpus, max_worker_num, data_folder, train):
     device_queue = _init_device_queue(which_gpus, max_worker_num)
 
     for file in os.listdir(data_folder):
-        process_pool.apply_async(
-            func=_worker,
-            args=[data_folder, file, train, device_queue],
-            error_callback=lambda e: logging.error(e))
+        if file.endswith('.npy'):
+            process_pool.apply_async(
+                func=_worker,
+                args=[data_folder, file, train, device_queue],
+                error_callback=lambda e: logging.error(e))
     process_pool.close()
     process_pool.join()
 
