@@ -683,7 +683,7 @@ def run_rl(rl_name, logdir, train, skills, gpu_id, num_seeds=3):
                 train=train,
             )
         )
-        setup_logger(rl_name, log_dir=logdir, variant=variant)
+        setup_logger(rl_name, log_dir=os.path.join(logdir, f'seed_{seed}'), variant=variant)
         ptu.set_gpu_mode(True, gpu_id)  # optionally set the GPU (default=False)
         experiment(variant)
 
