@@ -78,7 +78,7 @@ if __name__ == "__main__":
         '--train',
         help='train/test mode',
         type=bool,
-        default=True
+        default=False
     )
     args = parser.parse_args()
 
