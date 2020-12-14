@@ -1,7 +1,4 @@
-import gym_minigrid
 import multiprocessing as mp
-from gym_minigrid.wrappers import *
-import gym
 from heapq import heappush, heappop
 from itertools import count, product
 import copy
@@ -9,12 +6,12 @@ import os
 import random
 import datetime as dt
 import numpy as np
-from gym_minigrid.window import Window
 from calculate_mdl import preprocess_codebook, discover_codebooks
 
 import gym
-import gym_minigrid
-from torch import nn as nn
+from gym_minigrid.wrappers import *
+from gym_minigrid.window import Window
+# from torch import nn as nn
 
 # RLKit related stuff
 from rlkit.examples.dqn_and_double_dqn import experiment

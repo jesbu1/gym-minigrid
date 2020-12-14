@@ -51,7 +51,7 @@ def _worker(data_folder, file_name, train, device_queue):
 
         # run experiment
         experiment_name = 'rl_' + file_name.replace('.npy', '')
-        run_rl(experiment_name, os.path.join(os.getcwd(), data_folder, 'evaluations'), train, skills, gpu_id)
+        run_rl(experiment_name, os.path.join(os.getcwd(), data_folder, 'rl_logs'), train, skills, gpu_id)
 
         device_queue.put(gpu_id)
 
@@ -71,7 +71,7 @@ if __name__ == "__main__":
         '--data_folder',
         help='codebooks folder',
         type=str,
-        default='method5'
+        default='data/method5'
     )
     parser.add_argument(
         '--train',

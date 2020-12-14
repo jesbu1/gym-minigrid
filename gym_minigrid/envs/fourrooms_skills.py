@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from collect_data import training_valid
 from gym_minigrid.minigrid import *
 from gym_minigrid.register import register
 import numpy as np
@@ -125,7 +124,7 @@ class FourRoomsSkillsEnv(MiniGridEnv):
             # Generate goal
             self.goal_pos = self.grid.find_goal()
             
-            if not training_valid(self) ^ self._train:  # XNOR
+            if not self.training_valid() ^ self._train:  # XNOR
                 obs = self.gen_obs()
                 break
 
@@ -135,8 +134,36 @@ class FourRoomsSkillsEnv(MiniGridEnv):
         else:
             return self.build_obs()
 
+    # include here to prevent circular dependency
+    def training_valid(self):
+        agent_pos = self.agent_pos
+        goal_pos = self.goal_pos
+        agent_goal = (in_room(agent_pos), in_room(goal_pos))
+        test_set = {
+            (1, 3),
+            (3, 1),
+            (2, 4),
+            (4, 2)
+        }
+        return agent_goal not in test_set
+
     def build_obs(self):
         return np.concatenate((self.agent_pos, [self.agent_dir], self.goal_pos), axis=0)
+
+
+# include here to prevent circular dependency
+def in_room(pos):
+    # | 4 | 1 |
+    # | 3 | 2 |
+    w, h = pos
+    if w < 9 and h < 9:
+        return 4
+    elif w < 9 and h > 9:
+        return 3
+    elif w > 9 and h < 9:
+        return 1
+    else:
+        return 2
 
 
 register(
