@@ -24,18 +24,19 @@ def _init_device_queue(which_gpus, max_worker_num):
     return device_queue
 
 
-def run(which_gpus, max_worker_num, data_folder, train):
+def run(which_gpus, max_worker_num, data_folder, train, num_seeds):
 
     process_pool = multiprocessing.Pool(
         processes=max_worker_num, maxtasksperchild=1)
     device_queue = _init_device_queue(which_gpus, max_worker_num)
 
     for file in os.listdir(data_folder):
-        if file.endswith('.npy'):
-            process_pool.apply_async(
-                func=_worker,
-                args=[data_folder, file, train, device_queue],
-                error_callback=lambda e: logging.error(e))
+        for iteration in range(num_seeds):
+            if file.endswith('.npy'):
+                process_pool.apply_async(
+                    func=_worker,
+                    args=[data_folder, file, train, device_queue],
+                    error_callback=lambda e: logging.error(e))
     process_pool.close()
     process_pool.join()
 
@@ -81,7 +82,13 @@ if __name__ == "__main__":
         help='train mode on',
         action='store_true'
     )
+    parser.add_argument(
+        '--num_seeds',
+        help='number of times to train each codebook',
+        type=int,
+        default=3
+    )
     args = parser.parse_args()
 
     max_worker_num = len(args.which_gpus) * 3
-    run(args.which_gpus, max_worker_num, args.data_folder, args.train)
+    run(args.which_gpus, max_worker_num, args.data_folder, args.train, args.num_seeds)
