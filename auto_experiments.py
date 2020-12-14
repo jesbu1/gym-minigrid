@@ -78,9 +78,8 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         '--train',
-        help='train/test mode',
-        type=bool,
-        default=False
+        help='train mode on',
+        action='store_true'
     )
     args = parser.parse_args()
 
