@@ -11,6 +11,8 @@ import datetime as dt
 import numpy as np
 from gym_minigrid.window import Window
 from calculate_mdl import preprocess_codebook, discover_codebooks
+from auto_experiments import *
+
 import gym
 import gym_minigrid
 from torch import nn as nn
@@ -19,6 +21,7 @@ from torch import nn as nn
 from rlkit.examples.dqn_and_double_dqn import experiment
 from rlkit.launchers.launcher_util import setup_logger
 import rlkit.torch.pytorch_util as ptu
+
 
 NUM_PARALLEL_THREADS = 12
 
