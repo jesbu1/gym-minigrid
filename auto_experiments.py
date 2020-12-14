@@ -8,8 +8,10 @@ from pathos import multiprocessing
 import traceback
 import time
 import sys
-from collect_data import collect_data_rl
 import argparse
+from calculate_mdl import preprocess_codebook
+from collect_data import run_rl
+import numpy as np
 
 
 def _init_device_queue(which_gpus, max_worker_num):
@@ -30,11 +32,32 @@ def run(which_gpus, max_worker_num, data_folder, train):
 
     for file in os.listdir(data_folder):
         process_pool.apply_async(
-            func=collect_data_rl,
+            func=_worker,
             args=[data_folder, file, train, device_queue],
             error_callback=lambda e: logging.error(e))
     process_pool.close()
     process_pool.join()
+
+
+def _worker(data_folder, file_name, train, device_queue):
+    try:
+        time.sleep(random.uniform(0, 3))
+        gpu_id = device_queue.get()
+
+        # load codebook
+        codebook = np.load(os.path.join(data_folder, file_name), allow_pickle=True).item()
+        _, codebook = preprocess_codebook(codebook)
+        skills = [list(map(int, skill)) for skill in codebook.keys()]
+
+        # run experiment
+        experiment_name = 'rl_' + file_name.replace('.npy', '')
+        run_rl(experiment_name, os.path.join(os.getcwd(), data_folder, 'evaluations'), train, skills, gpu_id)
+
+        device_queue.put(gpu_id)
+
+    except Exception as e:
+        logging.info(traceback.format_exc())
+        raise e
 
 
 if __name__ == "__main__":

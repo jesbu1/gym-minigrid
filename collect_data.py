@@ -11,7 +11,6 @@ import datetime as dt
 import numpy as np
 from gym_minigrid.window import Window
 from calculate_mdl import preprocess_codebook, discover_codebooks
-from auto_experiments import *
 
 import gym
 import gym_minigrid
@@ -830,26 +829,6 @@ def test(data_folder):
         print(times_frequency)
 
 
-def collect_data_rl(data_folder, file_name, train, device_queue):
-    try:
-        time.sleep(random.uniform(0, 3))
-        gpu_id = device_queue.get()
-
-        # load codebook
-        codebook = np.load(os.path.join(data_folder, file_name), allow_pickle=True).item()
-        _, codebook = preprocess_codebook(codebook)
-        skills = [list(map(int, skill)) for skill in codebook.keys()]
-
-        # run experiment
-        experiment_name = 'rl_' + file_name.replace('.npy', '')
-        run_rl(experiment_name, os.path.join(os.getcwd(), data_folder, 'evaluations'), train, skills, gpu_id)
-
-        device_queue.put(gpu_id)
-
-    except Exception as e:
-        logging.info(traceback.format_exc())
-        raise e
-
 
 if __name__ == "__main__":
 
@@ -860,5 +839,5 @@ if __name__ == "__main__":
     data_folder = './data/method5'
 
     # collect_data_method2(env, data_folder, range(2,7), 100, num_code_books=40, num_trajectories=1000)
-    evaluate_data(env, data_folder)
+    # evaluate_data(env, data_folder)
     # test(data_folder)
