@@ -665,6 +665,7 @@ def run_rl(rl_name, logdir, train, skills, gpu_id, num_seeds=3):
             version="normal",
             replay_buffer_size=int(1E6),
             seed=seed,
+            name=rl_name,
             algorithm_kwargs=dict(
                 num_epochs=1000,
                 num_eval_steps_per_epoch=5000,
