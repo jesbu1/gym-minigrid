@@ -645,7 +645,7 @@ def evaluate_codebook_parallel(env, codebooks, num_test=500, num_train=500, prin
     return solutions
 
 
-def run_rl(rl_name, logdir, train, skills, gpu_id, num_seeds=3):
+def run_rl(rl_name, logdir, train, skills, gpu_id, seed=None):
     """
     Runs 3 seeds of a DQN RL experiment on MiniGrid-FourRoomsSkills-v0
     input:
@@ -654,39 +654,40 @@ def run_rl(rl_name, logdir, train, skills, gpu_id, num_seeds=3):
         train (bool): whether or not to use training environments
         gpu_id (int): gpu id
         skills (list): list of skills, where each skill is a list of integers from 0-2
+        seed (int): seed
 
     output:
         none
     """
-    seeds = [random.randint(0, 10000) for _ in range(num_seeds)]
-    for seed in seeds:
-        variant = dict(
-            algorithm="DQN",
-            version="normal",
-            replay_buffer_size=int(1E6),
-            seed=seed,
-            name=rl_name,
-            algorithm_kwargs=dict(
-                num_epochs=1000,
-                num_eval_steps_per_epoch=5000,
-                num_trains_per_train_loop=500,
-                num_expl_steps_per_train_loop=1000,
-                min_num_steps_before_training=1000,
-                max_path_length=100,
-                batch_size=256,
-            ),
-            trainer_kwargs=dict(
-                discount=0.99,
-                learning_rate=3E-4,
-            ),
-            env_kwargs=dict(
-                skills=skills,
-                train=train,
-            )
+    if seed is None:
+        seed = random.randint(0, 10000)
+    variant = dict(
+        algorithm="DQN",
+        version="normal",
+        replay_buffer_size=int(1E6),
+        seed=seed,
+        name=rl_name,
+        algorithm_kwargs=dict(
+            num_epochs=1000,
+            num_eval_steps_per_epoch=5000,
+            num_trains_per_train_loop=500,
+            num_expl_steps_per_train_loop=1000,
+            min_num_steps_before_training=1000,
+            max_path_length=100,
+            batch_size=256,
+        ),
+        trainer_kwargs=dict(
+            discount=0.99,
+            learning_rate=3E-4,
+        ),
+        env_kwargs=dict(
+            skills=skills,
+            train=train,
         )
-        setup_logger(rl_name, log_dir=os.path.join(logdir, f'seed_{seed}'), variant=variant)
-        ptu.set_gpu_mode(True, gpu_id)  # optionally set the GPU (default=False)
-        experiment(variant)
+    )
+    setup_logger(rl_name, log_dir=os.path.join(logdir, f'seed_{seed}'), variant=variant)
+    ptu.set_gpu_mode(True, gpu_id)  # optionally set the GPU (default=False)
+    experiment(variant)
 
 
 def evaluate_codebook(env, codebooks, num_test=500, num_train=500, print_every=50):
