@@ -142,7 +142,7 @@ def a_star(env, skills=None, codebook=None, length_range=None):
             break
 
         for action in skills:
-            if len(action) not in length_range:
+            if length_range is not None and isinstance(action, list) and len(action) not in length_range:
                 continue
             new_entry = None
             if isinstance(action, int): # primitive actions
@@ -418,14 +418,17 @@ class Trajectory:
     def __str__(self):
         return self.action_str
 
-    def split_actions(self, skill_length_range, biased_probabilities):
+    def split_actions(self, skill_length_range, biased_probabilities=None):
         self.action_str = ''
         l = len(self.actions)
         index = 0
         while 1:
             if index >= l:
                 break
-            length = np.random.choice(skill_length_range, p=biased_probabilities)
+            if biased_probabilities is None:
+                length = np.random.choice(skill_length_range)  # uniform
+            else:
+                length = np.random.choice(skill_length_range, p=biased_probabilities)
             skill = self.actions[index:index+length]
             if len(skill) in skill_length_range:
                 skill = ''.join(map(str, skill))
@@ -797,6 +800,43 @@ def collect_data_method2(env,
             count += 1
 
 
+def collect_data_method6(target_folder, num_actions=15):
+    """
+    Method 6: select a set of skills within a certain length range from a large skill pool,
+    run them on the same task to see if there're any differences
+    """
+    # make a large skill pool
+    trajectories = collect_trajectories(env, num=2000, show=False)
+    pool_pre = {}
+    for trajectory in trajectories:
+        trajectory.split_actions(range(2,11))
+        actions = trajectory.action_str
+
+        for action in actions.split(' ')[:-1]:  # exclude '' at the end
+            if action not in pool_pre:
+                pool_pre[action] = 1
+            else:
+                pool_pre[action] += 1
+
+    # separate pool_pre according to length
+    pool = {}
+    for k, v in pool_pre.items():
+        if len(k) not in pool:
+            pool[len(k)] = {k:v}
+        else:
+            pool[len(k)][k] = v
+
+    # make 8 codebooks, each of length: 2-3, 3-4, ..., 9-10
+    for i in range(2,10):
+        skills = {**pool[i], **pool[i+1]}  # i, i+1
+        skills_sorted = dict(sorted(skills.items(), key=lambda item: item[1], reverse=True))  # sort by frequency
+        # code_book = list(skills_sorted.items())
+        code_book_clip = list(skills_sorted.items())[:num_actions]
+        path = os.path.join(target_folder, 'code_book_' + str(i) + '_to_' + str(i+1) + '.npy')
+        np.save(path, code_book_clip)
+        print(f'Codebook saved to {path}')
+
+
 def evaluate_data(env, data_folder, seed=None):
     """Evaluate codebooks"""
 
@@ -837,8 +877,8 @@ if __name__ == "__main__":
     env = GoalPositionWrapper(env)
     # show_init(env)
 
-    data_folder = './data/method5'
+    data_folder = './data/method6'
 
-    # collect_data_method2(env, data_folder, range(2,7), 100, num_code_books=40, num_trajectories=1000)
+    # collect_data_method6(data_folder)
     # evaluate_data(env, data_folder)
     # test(data_folder)
