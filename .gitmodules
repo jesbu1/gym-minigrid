@@ -1,6 +1,3 @@
-[submodule "rl-starter-files"]
-	path = rl-starter-files
-	url = git@github.com:jesbu1/rl-starter-files.git
 [submodule "rlkit"]
 	path = rlkit
 	url = git@github.com:jesbu1/rlkit.git
