@@ -75,7 +75,7 @@ if __name__ == "__main__":
         '--data_folder',
         help='codebooks folder',
         type=str,
-        default='data/method5'
+        default='data/method6'
     )
     parser.add_argument(
         '--train',

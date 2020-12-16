@@ -693,6 +693,9 @@ def run_rl(rl_name, logdir, train, skills, gpu_id, seed=None):
     """
     if seed is None:
         seed = random.randint(0, 10000)
+    skill_lengths = set()
+    for skill in skills:
+        skill_lengths.add(len(skill))
     variant = dict(
         algorithm="DQN",
         version="normal",
@@ -701,8 +704,11 @@ def run_rl(rl_name, logdir, train, skills, gpu_id, seed=None):
         name=rl_name,
         epsilon=0.1,
         hidden_size=128,
+        num_skills=len(skills),
+        max_skill_len=min(skill_lengths),
+        min_skill_len=max(skill_lengths),
         algorithm_kwargs=dict(
-            num_epochs=1000,
+            num_epochs=500,
             num_eval_steps_per_epoch=5000,
             num_trains_per_train_loop=500,
             num_expl_steps_per_train_loop=1000,
