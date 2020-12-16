@@ -172,6 +172,8 @@ def a_star(env, skills=None, codebook=None, length_range=None):
                 open_dict[new_entry] = new_f
                 heappush(open, [new_f, next(counter), (new_entry, new_seq)])
 
+    if solution is None and not open:  # no solution
+        return None, None
     return solution, cost
 
 
@@ -248,6 +250,10 @@ def a_star_parallel(env, out_q, skills=None, codebook=None, name=None, length_ra
                 open_dict[new_entry] = new_f
                 heappush(open, [new_f, next(counter), (new_entry, new_seq)])
 
+    if solution is None and not open:  # no solution
+        output_dict = {name: (None, None)}
+        out_q.put(output_dict)
+        return
     output_dict = {name: (solution, cost)}
     out_q.put(output_dict)
 
@@ -585,6 +591,9 @@ def evaluate_codebook_parallel(env, codebooks, num_test=500, num_train=500, prin
         env.reset()
 
         if not training_valid(env) and count_test < num_test:  # in test set
+            results = []
+            no_solution = False
+
             out_q = mp.Queue()
             procs = []
             result_dict = {}
@@ -607,10 +616,20 @@ def evaluate_codebook_parallel(env, codebooks, num_test=500, num_train=500, prin
             for proc in procs:
                 proc.join()
             for file, (solution, cost) in result_dict.items():
+                if solution is None and cost is None:
+                    no_solution = True
+                    break
                 traj = Trajectory(solution, env, simulate=True)  # simulate without interacting with env
-                solutions[file]['test'].append((str(traj), cost, traj.start_pos, traj.goal_pos))
-            count_test += 1
+                results.append((file, traj, cost))
+
+            if not no_solution:
+                for file, traj, cost in results:
+                    solutions[file]['test'].append((str(traj), cost, traj.start_pos, traj.goal_pos))
+                count_test += 1
         elif training_valid(env) and count_train < num_train:  # in train set
+            results = []
+            no_solution = False
+
             out_q = mp.Queue()
             procs = []
             result_dict = {}
@@ -634,9 +653,16 @@ def evaluate_codebook_parallel(env, codebooks, num_test=500, num_train=500, prin
             for proc in procs:
                 proc.join()
             for file, (solution, cost) in result_dict.items():
+                if solution is None and cost is None:
+                    no_solution = True
+                    break
                 traj = Trajectory(solution, env, simulate=True)
-                solutions[file]['train'].append((str(traj), cost, traj.start_pos, traj.goal_pos))
-            count_train += 1
+                results.append((file, traj, cost))
+
+            if not no_solution:
+                for file, traj, cost in results:
+                    solutions[file]['train'].append((str(traj), cost, traj.start_pos, traj.goal_pos))
+                count_train += 1
 
         count += 1
         if count % print_every == 0 and count != 0:
@@ -722,17 +748,35 @@ def evaluate_codebook(env, codebooks, num_test=500, num_train=500, print_every=5
         env.reset()
 
         if not training_valid(env) and count_test < num_test:  # in test set
+            results = []
+            no_solution = False
             for file, codebook, length_range in codebooks:
                 solution, cost = a_star(env, skills=skills[file], length_range=length_range)
+                if solution is None and cost is None:
+                    no_solution = True
+                    break
                 traj = Trajectory(solution, env, simulate=True)  # simulate without interacting with env
-                solutions[file]['test'].append((str(traj), cost, traj.start_pos, traj.goal_pos))
-            count_test += 1
+                results.append((file, traj, cost))
+
+            if not no_solution:
+                for file, traj, cost in results:
+                    solutions[file]['test'].append((str(traj), cost, traj.start_pos, traj.goal_pos))
+                count_test += 1
         elif training_valid(env) and count_train < num_train:  # in train set
+            results = []
+            no_solution = False
             for file, codebook, length_range in codebooks:
                 solution, cost = a_star(env, skills=skills[file], length_range=length_range)
+                if solution is None and cost is None:
+                    no_solution = True
+                    break
                 traj = Trajectory(solution, env, simulate=True)
-                solutions[file]['train'].append((str(traj), cost, traj.start_pos, traj.goal_pos))
-            count_train += 1
+                results.append((file, traj, cost))
+
+            if not no_solution:
+                for file, traj, cost in results:
+                    solutions[file]['train'].append((str(traj), cost, traj.start_pos, traj.goal_pos))
+                count_train += 1
 
         count += 1
         if count % print_every == 0 and count != 0:
@@ -832,6 +876,7 @@ def collect_data_method6(target_folder, num_actions=15):
         skills_sorted = dict(sorted(skills.items(), key=lambda item: item[1], reverse=True))  # sort by frequency
         # code_book = list(skills_sorted.items())
         code_book_clip = list(skills_sorted.items())[:num_actions]
+        # code_book_random = np.random.shuffle(list(skills_sorted.items()))[:num_actions]
         path = os.path.join(target_folder, 'code_book_' + str(i) + '_to_' + str(i+1) + '.npy')
         np.save(path, code_book_clip)
         print(f'Codebook saved to {path}')
@@ -860,6 +905,29 @@ def evaluate_data(env, data_folder, seed=None):
     #     print(dict)
 
 
+def evaluate_data_method6(env, data_folder):
+
+    codebooks = []
+    for codebook_file in os.listdir(data_folder):
+        if codebook_file.endswith('.npy'):
+            codebook = np.load(os.path.join(data_folder, codebook_file))
+            codebook = {item[0]: int(item[1]) for item in codebook}
+            lengths = np.unique([len(l) for l in list(codebook.keys())])
+            codebooks.append((codebook_file, codebook, range(lengths[0], lengths[0]+2)))
+
+    solutions = evaluate_codebook_parallel(env, codebooks)
+    for file, dict in solutions.items():
+        path = os.path.join(data_folder, 'evaluations', 'trajectories_' + file)
+        np.save(path, dict)
+        print(f'Trajectories saved to {path}')
+
+    # files = [file for file, _, _ in codebooks]
+    # for file in files:
+    #     path = os.path.join(data_folder, 'evaluations', 'trajectories_' + file)
+    #     dict = np.load(path, allow_pickle=True).item()
+    #     print(dict)
+
+
 def test(data_folder):
     codebooks_pre = discover_codebooks(data_folder)
     codebooks = [(file_name, preprocess_codebook(codebook)[1]) for file_name, codebook in codebooks_pre]
@@ -868,7 +936,6 @@ def test(data_folder):
         for k, v in codebook.items():
             times_frequency += len(k)*v
         print(times_frequency)
-
 
 
 if __name__ == "__main__":
@@ -880,5 +947,5 @@ if __name__ == "__main__":
     data_folder = './data/method6'
 
     # collect_data_method6(data_folder)
-    # evaluate_data(env, data_folder)
+    evaluate_data_method6(env, data_folder)
     # test(data_folder)
