@@ -471,18 +471,19 @@ def build_codebook_method_1(trajectories, complete_skills):
     return code_book
 
 
-def build_codebook_method_2(trajectories, skill_length_range):
+def build_codebook_method_2(trajectories, skill_length_range, uniform):
     # code_book: {
     #     'trajectories': list of str representations of all trajectories,
     #     skill in str form: num of occurrences,
     # }
-    code_book = {'trajectories': []}
+    code_book = {'trajectories': [], 'length_range': skill_length_range}
 
-    v = np.random.random_sample(len(skill_length_range))
-    biased_probabilities = v / np.linalg.norm(v, ord=1)  # normalize
+    biased_probabilities = None
 
-    code_book['length_range'] = skill_length_range
-    code_book['probabilities'] = biased_probabilities
+    if not uniform:
+        v = np.random.random_sample(len(skill_length_range))
+        biased_probabilities = v / np.linalg.norm(v, ord=1)  # normalize
+        code_book['probabilities'] = biased_probabilities
 
     for trajectory in trajectories:
 
@@ -817,7 +818,8 @@ def collect_data_method1(env, data_folder, seed=None, num_code_books=10, num_tra
 def collect_data_method2(env,
                          data_folder,
                          skill_length_range,
-                         num_skills,
+                         num_skills=None,
+                         uniform=False,
                          seed=None,
                          num_code_books=20,
                          num_trajectories=100):
@@ -834,52 +836,15 @@ def collect_data_method2(env,
     count = 0
     while count < num_code_books:
 
-        code_book = build_codebook_method_2(trajectories, skill_length_range)
+        code_book = build_codebook_method_2(trajectories, skill_length_range, uniform)
         # print(code_book)
 
-        if len(code_book) - 2 == num_skills:  # minus 2: 'length_range' & 'probabilities'
+        # minus 2: 'length_range' & 'probabilities'
+        if len(code_book) - 2 == num_skills and num_skills is not None or num_skills is None:
             path = os.path.join(data_folder, 'code_book' + str(count + 1) + '.npy')
             np.save(path, code_book)
             print('Codebook saved to %s' % path)
             count += 1
-
-
-def collect_data_method6(target_folder, num_actions=15):
-    """
-    Method 6: select a set of skills within a certain length range from a large skill pool,
-    run them on the same task to see if there're any differences
-    """
-    # make a large skill pool
-    trajectories = collect_trajectories(env, num=2000, show=False)
-    pool_pre = {}
-    for trajectory in trajectories:
-        trajectory.split_actions(range(2,11))
-        actions = trajectory.action_str
-
-        for action in actions.split(' ')[:-1]:  # exclude '' at the end
-            if action not in pool_pre:
-                pool_pre[action] = 1
-            else:
-                pool_pre[action] += 1
-
-    # separate pool_pre according to length
-    pool = {}
-    for k, v in pool_pre.items():
-        if len(k) not in pool:
-            pool[len(k)] = {k:v}
-        else:
-            pool[len(k)][k] = v
-
-    # make 8 codebooks, each of length: 2-3, 3-4, ..., 9-10
-    for i in range(2,10):
-        skills = {**pool[i], **pool[i+1]}  # i, i+1
-        skills_sorted = dict(sorted(skills.items(), key=lambda item: item[1], reverse=True))  # sort by frequency
-        # code_book = list(skills_sorted.items())
-        code_book_clip = list(skills_sorted.items())[:num_actions]
-        # code_book_random = np.random.shuffle(list(skills_sorted.items()))[:num_actions]
-        path = os.path.join(target_folder, 'code_book_' + str(i) + '_to_' + str(i+1) + '.npy')
-        np.save(path, code_book_clip)
-        print(f'Codebook saved to {path}')
 
 
 def evaluate_data(env, data_folder, seed=None):
@@ -905,25 +870,46 @@ def evaluate_data(env, data_folder, seed=None):
     #     print(dict)
 
 
-def evaluate_data_method6(env, data_folder):
+def evaluate_data_method6(env, data_folder, num_actions=15):
 
-    codebooks = []
+    # load large skill pool (codebook)
+    global dict
+    pool_pre = None
     for codebook_file in os.listdir(data_folder):
         if codebook_file.endswith('.npy'):
-            codebook = np.load(os.path.join(data_folder, codebook_file))
-            codebook = {item[0]: int(item[1]) for item in codebook}
-            lengths = np.unique([len(l) for l in list(codebook.keys())])
-            codebooks.append((codebook_file, codebook, range(lengths[0], lengths[0]+2)))
+            codebook = np.load(os.path.join(data_folder, codebook_file), allow_pickle=True).item()
+            pool_pre = (codebook_file, preprocess_codebook(codebook)[1])
+
+    # separate pool_pre according to length
+    pool = {}
+    for k, v in pool_pre[1].items():
+        if len(k) not in pool:
+            pool[len(k)] = {k: v}
+        else:
+            pool[len(k)][k] = v
+
+    # make 8 codebooks, each of length: 2-3, 3-4, ..., 9-10
+    codebooks = []
+    for i in range(2,10):
+        skills = {**pool[i], **pool[i + 1]}  # i, i+1
+        skills = dict(sorted(skills.items(), key=lambda item: item[1], reverse=True))  # sort by frequency
+        # code_book_all = list(skills.items())
+        # code_book_random = np.random.shuffle(list(skills.items()))[:num_actions]
+        code_book_clip = dict(list(skills.items())[:num_actions])
+        ls = np.unique([len(l) for l in list(code_book_clip.keys())])
+        codebooks.append(
+            ('codebook_' + str(ls[0]) + '_to_' + str(ls[1]), code_book_clip, range(ls[0], ls[0]+2))
+        )
 
     solutions = evaluate_codebook_parallel(env, codebooks)
     for file, dict in solutions.items():
-        path = os.path.join(data_folder, 'evaluations', 'trajectories_' + file)
+        path = os.path.join(data_folder, 'evaluations', 'trajectories_' + file + '.npy')
         np.save(path, dict)
         print(f'Trajectories saved to {path}')
 
-    # files = [file for file, _, _ in codebooks]
-    # for file in files:
-    #     path = os.path.join(data_folder, 'evaluations', 'trajectories_' + file)
+    # evaluations_dir = os.path.join(data_folder, 'evaluations')
+    # for file in os.listdir(evaluations_dir):
+    #     path = os.path.join(evaluations_dir, file)
     #     dict = np.load(path, allow_pickle=True).item()
     #     print(dict)
 
@@ -946,6 +932,5 @@ if __name__ == "__main__":
 
     data_folder = './data/method6'
 
-    # collect_data_method6(data_folder)
-    evaluate_data_method6(env, data_folder)
-    # test(data_folder)
+    # collect_data_method2(env, data_folder, range(2,11), uniform=True, num_code_books=1, num_trajectories=2000)
+    # evaluate_data_method6(env, data_folder)
