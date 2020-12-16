@@ -55,9 +55,17 @@ if __name__ == "__main__":
     codebooks = discover_codebooks(args.location)
     codebook_name_dl_tuples = []
     codebook_dict = {}
+    previous_length_range = None
+    track_probs = True
     for codebook in codebooks:
         length_range = codebook[1].pop('length_range')
         probabilities = codebook[1].pop('probabilities')
+        if track_probs != False:
+            # If different lengths, then don't track this
+            if previous_length_range != None:
+                if length_range != previous_length_range:
+                    track_probs = False
+            previous_length_range = length_range
         dl, tree_bits, codec, uncompressed_len = calculate_codebook_dl(codebook[1])
         codebook_name_dl_tuples.append((codebook[0], dl, tree_bits, codec, length_range, probabilities, uncompressed_len))
     sorted_codebooks_by_dl = sorted(codebook_name_dl_tuples, key=lambda x: x[1])
@@ -101,12 +109,13 @@ if __name__ == "__main__":
         accumulate_values('train')
         accumulate_values('test')
         pd_dict['codebook_dl'].append(dl)
-        for i, length in enumerate(codebook_dict[name]['length_range']):
-            length = str(length)
-            length_set.add(length)
-            if length not in pd_dict:
-                pd_dict[length] = []
-            pd_dict[length].append(codebook_dict[name]['probabilities'][i])
+        if track_probs:
+            for i, length in enumerate(codebook_dict[name]['length_range']):
+                length = str(length)
+                length_set.add(length)
+                if length not in pd_dict:
+                    pd_dict[length] = []
+                pd_dict[length].append(codebook_dict[name]['probabilities'][i])
         pd_dict['num_symbols'].append(len(codebook_dict[name]['codec'].get_code_table()))
     df = pd.DataFrame(data=pd_dict, index=pd_index)
     correlation_method = 'pearson'
@@ -116,19 +125,20 @@ if __name__ == "__main__":
             correlation = df['codebook_dl'].corr(df[column], method=correlation_method)
             print(column, correlation)
     """
-    #printing correlation of frequency of skill length and all metrics
-    for col1 in df.columns:
-        if col1 in length_set:
-            for col2 in df.columns:
-                if col2 not in length_set:
-                    correlation = df[col1].corr(df[col2])
-                    print(col1, col2, correlation)
+    if track_probs:
+        #printing correlation of frequency of skill length and all metrics
+        for col1 in df.columns:
+            if col1 in length_set:
+                for col2 in df.columns:
+                    if col2 not in length_set:
+                        correlation = df[col1].corr(df[col2])
+                        print(col1, col2, correlation)
     """
     # correlation between primitive and abstract actions
-    for col1 in df.columns:
-        if "train" in col1:
-            for col2 in df.columns:
-                if "train" in col2 and (col1 != col2):
-                    correlation = df[col1].corr(df[col2], method=correlation_method)
-                    print(col1, col2, correlation)
+    #for col1 in df.columns:
+    #    if "train" in col1:
+    #        for col2 in df.columns:
+    #            if "train" in col2 and (col1 != col2):
+    #                correlation = df[col1].corr(df[col2], method=correlation_method)
+    #                print(col1, col2, correlation)
     df.to_csv(os.path.join(args.location, 'analysis.csv'))

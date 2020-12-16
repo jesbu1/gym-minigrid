@@ -63,8 +63,8 @@ def calculate_codebook_dl(codebook):
             tree_bits += bits
     dl = len(encoded)*8 + tree_bits # * 8 for byte to bit conversion
     uncompressed_len = len("".join(trajectories).encode('utf-8')) * 8
-    #return dl, tree_bits, codec, uncompressed_len 
-    return len(encoded) * 8, tree_bits, codec, uncompressed_len 
+    return dl, tree_bits, codec, uncompressed_len 
+    #return len(encoded) * 8, tree_bits, codec, uncompressed_len 
     #return tree_bits, tree_bits, codec, uncompressed_len 
 
 
