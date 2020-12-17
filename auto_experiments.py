@@ -24,7 +24,7 @@ def _init_device_queue(which_gpus, max_worker_num):
     return device_queue
 
 
-def run(which_gpus, max_worker_num, data_folder, train, num_seeds):
+def run(which_gpus, max_worker_num, data_folder, train, num_seeds, num_actions):
 
     process_pool = multiprocessing.Pool(
         processes=max_worker_num, maxtasksperchild=1)
@@ -35,13 +35,13 @@ def run(which_gpus, max_worker_num, data_folder, train, num_seeds):
             if file.endswith('.npy'):
                 process_pool.apply_async(
                     func=_worker,
-                    args=[data_folder, file, train, device_queue],
+                    args=[data_folder, file, train, device_queue, num_actions],
                     error_callback=lambda e: logging.error(e))
     process_pool.close()
     process_pool.join()
 
 
-def _worker(data_folder, file_name, train, device_queue):
+def _worker(data_folder, file_name, train, device_queue, num_actions):
     try:
         time.sleep(random.uniform(0, 3))
         gpu_id = device_queue.get()
@@ -49,6 +49,8 @@ def _worker(data_folder, file_name, train, device_queue):
         # load codebook
         codebook = np.load(os.path.join(data_folder, file_name), allow_pickle=True).item()
         _, codebook = preprocess_codebook(codebook)
+        codebook_sorted = dict(sorted(codebook.items(), key=lambda item: item[1], reverse=True))
+        codebook_clipped = dict(list(codebook_sorted.items())[:num_actions])
         skills = [list(map(int, skill)) for skill in codebook.keys()]
 
         # run experiment
@@ -83,6 +85,12 @@ if __name__ == "__main__":
         action='store_true'
     )
     parser.add_argument(
+        '--num_actions',
+        help='number of top actions to use',
+        type=int,
+        default=15
+    )
+    parser.add_argument(
         '--num_seeds',
         help='number of times to train each codebook',
         type=int,
@@ -91,4 +99,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     max_worker_num = len(args.which_gpus) * 3
-    run(args.which_gpus, max_worker_num, args.data_folder, args.train, args.num_seeds)
+    run(args.which_gpus, max_worker_num, args.data_folder, args.train, args.num_seeds, args.num_actions)
