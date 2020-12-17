@@ -51,7 +51,7 @@ def _worker(data_folder, file_name, train, device_queue, num_actions):
         _, codebook = preprocess_codebook(codebook)
         codebook_sorted = dict(sorted(codebook.items(), key=lambda item: item[1], reverse=True))
         codebook_clipped = dict(list(codebook_sorted.items())[:num_actions])
-        skills = [list(map(int, skill)) for skill in codebook.keys()]
+        skills = [list(map(int, skill)) for skill in codebook_clipped.keys()]
 
         # run experiment
         experiment_name = 'rl_' + file_name.replace('.npy', '')
