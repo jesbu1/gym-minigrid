@@ -3,6 +3,53 @@ from calculate_mdl import *
 import argparse
 import os
 import pandas as pd
+from sklearn import metrics as sk_metrics
+
+def calculate_auc(curve):
+    epochs = np.arange(len(curve))
+    return sk_metrics.auc(epochs, curve)
+
+def smooth(list_of_list_of_scalars, weight: float):  # Weight between 0 and 1
+    list_of_smoothed = []
+    for scalars in list_of_list_of_scalars:
+        last = scalars[0]  # First value in the plot (first timestep)
+        smoothed = list()
+        for point in scalars:
+            smoothed_val = last * weight + (1 - weight) * point  # Calculate smoothed value
+            smoothed.append(smoothed_val)                        # Save it
+            last = smoothed_val                                  # Anchor the last smoothed value
+        list_of_smoothed.append(smoothed)
+    return list_of_smoothed
+
+def calculate_codebook_metrics(location):
+    """
+    Return list of smoothed, averaged codebook returns given the codebook location
+    """
+    dirs_to_search = ['rl_logs_train', 'rl_logs_test']
+    metrics = {}
+    for log_dir in dirs_to_search:
+        for codebook_file in os.listdir(os.path.join(location, log_dir)):
+            for seed_dir in os.listdir(os.path.join(location, log_dir, codebook_file)):
+                    for inner_file in os.listdir(os.path.join(location, log_dir, codebook_file, seed_dir)):
+                        if inner_file.endswith('progress.csv'):
+                            progress_csv = os.path.join(location, log_dir, codebook_file, seed_dir, inner_file)
+                            df = pd.read_csv(progress_csv)
+                            rewards = df['evaluation/Average Returns'].to_numpy()
+                            #path_length = df['evaluation/path length Mean'].to_numpy()
+                            stripped_codebook_file = codebook_file.replace('rl_', '')
+                            stripped_codebook_file += '.npy'
+                            if stripped_codebook_file not in metrics:
+                                metrics[stripped_codebook_file] = dict(train=[], test=[])
+                            if 'train' in log_dir:
+                                metrics[stripped_codebook_file]['train'].append(rewards)
+                            else: 
+                                metrics[stripped_codebook_file]['test'].append(rewards)
+    for codebook_file in metrics.keys():
+        smoothed_train = smooth(metrics[codebook_file]['train'], 0.5)
+        smoothed_test = smooth(metrics[codebook_file]['test'], 0.5)
+        metrics[codebook_file]['train'] = np.mean(smoothed_train, axis=0)
+        metrics[codebook_file]['test'] = np.mean(smoothed_test, axis=0)
+    return metrics 
 
 def discover_evaluations(location):
     """
@@ -43,6 +90,7 @@ def process_evaluation(evaluation, codec, tree_bits, name, trajectory_dict):
                 trajectory_dict[traj_type][trajectory_id][name] = metrics
     process_trajectories(train_trajectories, 'train')
     process_trajectories(test_trajectories, 'test')
+
         
 
 
@@ -80,6 +128,12 @@ if __name__ == "__main__":
                                    uncompressed_len=uncompressed_len)
 
     evaluations = discover_evaluations(os.path.join(args.location, 'evaluations'))
+    has_rl = False
+    try: 
+        metrics = calculate_codebook_metrics(args.location)
+        has_rl = True
+    except FileNotFoundError as e:
+        print("No RL Logs Detected")
     trajectory_dict = dict(train={}, test={}, probabilities={})
     for codebook_name, evaluation in evaluations:
         original_name = codebook_name.replace("trajectories_", "")
@@ -88,7 +142,10 @@ if __name__ == "__main__":
 
     # building a pandas dataframe
     pd_index = []
-    pd_dict = {'codebook_dl': [], 'num_symbols': []}
+    pd_dict = {'codebook_dl': [], 'num_symbols': [], 'train_rl_auc': [], 'test_rl_auc': []}
+    if not has_rl:
+        pd_dict.pop('train_rl_auc')
+        pd_dict.pop('test_rl_auc')
     length_set = set()
     for name, dl, *_ in sorted_codebooks_by_dl:
         pd_index.append(name)
@@ -117,6 +174,9 @@ if __name__ == "__main__":
                     pd_dict[length] = []
                 pd_dict[length].append(codebook_dict[name]['probabilities'][i])
         pd_dict['num_symbols'].append(len(codebook_dict[name]['codec'].get_code_table()))
+        if has_rl:
+            pd_dict['train_rl_auc'].append(calculate_auc(metrics[name]['train']))
+            pd_dict['test_rl_auc'].append(calculate_auc(metrics[name]['test']))
     df = pd.DataFrame(data=pd_dict, index=pd_index)
     correlation_method = 'pearson'
     #printing correlation of codebook description length and other metrics
