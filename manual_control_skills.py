@@ -9,17 +9,12 @@ from gym_minigrid.wrappers import *
 from gym_minigrid.window import Window
 import os
 
-FRAME = 0
-
 def redraw(img):
     if not args.agent_view:
         img = env.render('rgb_array', tile_size=args.tile_size)
 
-    global FRAME
-    FRAME = FRAME + 1
-
     window.show_img(img)
-    window.save_img(os.path.join(os.getcwd(), 'figures/gif'), FRAME)
+    window.save_img(os.path.join(os.getcwd(), 'figures/gif'), env.step_count)
 
 def reset():
     if args.seed != -1:

@@ -76,7 +76,7 @@ def finished(entry, goal_pos):
     return entry[0]==goal_pos[0] and entry[1]==goal_pos[1]
 
 
-def is_valid(entry):
+def is_valid(env, entry):
     return env.grid.is_valid(entry[0], entry[1])
 
 
@@ -147,13 +147,13 @@ def a_star(env, skills=None, codebook=None, length_range=None):
             new_entry = None
             if isinstance(action, int): # primitive actions
                 new_entry = one_step(curr_entry, action)
-                if not is_valid(new_entry):
+                if not is_valid(env, new_entry):
                     new_entry = curr_entry
             elif isinstance(action, list):
                 new_entry = curr_entry
                 for a in action: # action: [a1, a2, ...]
                     next_entry = one_step(new_entry, a)
-                    if is_valid(next_entry):
+                    if is_valid(env, next_entry):
                         new_entry = next_entry
 
             new_h = get_h(new_entry, goal_pos)
@@ -225,13 +225,13 @@ def a_star_parallel(env, out_q, skills=None, codebook=None, name=None, length_ra
             new_entry = None
             if isinstance(action, int): # primitive actions
                 new_entry = one_step(curr_entry, action)
-                if not is_valid(new_entry):
+                if not is_valid(env, new_entry):
                     new_entry = curr_entry
             elif isinstance(action, list):
                 new_entry = curr_entry
                 for a in action: # action: [a1, a2, ...]
                     next_entry = one_step(new_entry, a)
-                    if is_valid(next_entry):
+                    if is_valid(env, next_entry):
                         new_entry = next_entry
 
             new_h = get_h(new_entry, goal_pos)
@@ -358,7 +358,7 @@ class Trajectory:
 
                 if simulate:
                     new_entry = one_step(curr_entry, action)
-                    if not is_valid(new_entry):
+                    if not is_valid(env, new_entry):
                         new_entry = curr_entry
                     curr_agent_states.append(new_entry)
                     curr_entry = new_entry
@@ -386,7 +386,7 @@ class Trajectory:
 
                     if simulate:
                         next_entry = one_step(new_entry, a)
-                        if is_valid(next_entry):
+                        if is_valid(env, next_entry):
                             new_entry = next_entry
                         curr_agent_states.append(new_entry)
                         curr_entry = new_entry
