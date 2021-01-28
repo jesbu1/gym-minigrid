@@ -39,6 +39,11 @@ class Window:
 
         self.fig.canvas.mpl_connect('close_event', close_handler)
 
+    def save_img(self, path, frame):
+        import os
+        image_file = os.path.join(path, f'frame_{frame}.png')
+        plt.savefig(image_file)
+
     def show_img(self, img):
         """
         Show an image or update the image being shown
