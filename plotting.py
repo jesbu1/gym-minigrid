@@ -26,9 +26,10 @@ plt.plot(x1, y1, '.')
 plt.plot(x1, b1 + m1 * x1, '--')
 plt.xlabel('Codebook DL')
 plt.ylabel('Area Under Curve (AUC)')
-plt.title(f'Correlation between DL and RL agent: {correlation1}')
-plt.show()
-# plt.savefig('dl_rl_correlation.png')
+plt.title(f'Correlation between DL and RL Reward AUC: {correlation1:.2f}')
+#plt.show()
+plt.savefig('figures/dl_rl_correlation.png', bbox_inches="tight")
+plt.savefig('figures/dl_rl_correlation.pdf', bbox_inches="tight")
 
 # DL against augmented A*
 y2 = df['test_node_cost']
@@ -41,9 +42,10 @@ plt.plot(x1, y2, '.')
 plt.plot(x1, b2 + m2 * x1, '--')
 plt.xlabel('Codebook DL')
 plt.ylabel('Search Cost (node expanded)')
-plt.title(f'Correlation between DL and A* search: {correlation2}')
-plt.show()
-# plt.savefig('dl_a_star_correlation.png')
+plt.title(f'Correlation between DL and A* search: {correlation2:.2f}')
+#plt.show()
+plt.savefig('figures/dl_a_star_correlation.png', bbox_inches="tight")
+plt.savefig('figures/dl_a_star_correlation.pdf', bbox_inches="tight")
 
 # qualitative examples
 good_figure_dir = os.path.join(os.getcwd(), 'figures/good/')
