@@ -99,7 +99,7 @@ def one_step(curr_entry, action):
     return new_entry
 
 
-def a_star(env, skills=None, codebook=None, length_range=None):
+def a_star(env, skills=None, codebook=None, length_range=None, save_search_path=False):
 
     agent_pos = env.agent_pos
     goal_pos = env.goal_pos
@@ -125,6 +125,7 @@ def a_star(env, skills=None, codebook=None, length_range=None):
         skills = [list(map(int, skill)) for skill in codebook.keys()]  # convert '1011' to [1,0,1,1]
 
     cost = 0
+    search_path = []
 
     while open:
 
@@ -169,11 +170,17 @@ def a_star(env, skills=None, codebook=None, length_range=None):
                     heappush(open, [new_f, next(counter), (new_entry, new_seq)])
             elif new_entry not in closed and new_entry not in open_dict:
                 cost += 1
+                if save_search_path:
+                    search_path.append(new_entry)
                 open_dict[new_entry] = new_f
                 heappush(open, [new_f, next(counter), (new_entry, new_seq)])
 
     if solution is None and not open:  # no solution
         return None, None
+
+    if save_search_path:
+        return solution, cost, search_path
+
     return solution, cost
 
 

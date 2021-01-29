@@ -82,6 +82,9 @@ class FourRoomsSkillsEnv(MiniGridEnv):
 
         self.mission = 'Reach the goal'
 
+    def add_heat(self, search_path):
+        self.grid.add_heat(search_path)
+
     def step(self, action):
         total_reward = 0
         actual_action = self._skills[action]

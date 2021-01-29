@@ -351,6 +351,7 @@ class Grid:
         self.height = height
 
         self.grid = [None] * width * height
+        self.heat_map = {}
 
     def __contains__(self, key):
         if isinstance(key, WorldObj):
@@ -456,10 +457,18 @@ class Grid:
 
         return grid
 
+    def add_heat(self, search_path):
+        for x, y, _ in search_path:
+            if (x,y) not in self.heat_map:
+                self.heat_map[(x,y)] = 1
+            else:
+                self.heat_map[(x,y)] = self.heat_map[(x,y)] + 1
+
     @classmethod
     def render_tile(
             cls,
             obj,
+            heat,
             agent_dir=None,
             highlight=False,
             tile_size=TILE_PIXELS,
@@ -473,7 +482,7 @@ class Grid:
         key = (agent_dir, highlight, tile_size)
         key = obj.encode() + key if obj else key
 
-        if key in cls.tile_cache:
+        if key in cls.tile_cache and heat is None:
             return cls.tile_cache[key]
 
         img = np.zeros(shape=(tile_size * subdivs, tile_size * subdivs, 3), dtype=np.uint8)
@@ -497,6 +506,10 @@ class Grid:
             tri_fn = rotate_fn(tri_fn, cx=0.5, cy=0.5, theta=0.5 * math.pi * agent_dir)
             fill_coords(img, tri_fn, (255, 0, 0))
 
+        if heat is not None:
+            for _ in range(heat):
+                highlight_img(img, color=COLORS['yellow'], alpha=0.15)
+
         # Highlight the cell if needed
         if highlight:
             highlight_img(img)
@@ -505,7 +518,8 @@ class Grid:
         img = downsample(img, subdivs)
 
         # Cache the rendered tile
-        cls.tile_cache[key] = img
+        if heat is None:
+            cls.tile_cache[key] = img
 
         return img
 
@@ -537,8 +551,12 @@ class Grid:
                 cell = self.get(i, j)
 
                 agent_here = np.array_equal(agent_pos, (i, j))
+                heat = None
+                if (i,j) in self.heat_map:
+                    heat = self.heat_map[(i,j)]
                 tile_img = Grid.render_tile(
                     cell,
+                    heat,
                     agent_dir=agent_dir if agent_here else None,
                     highlight=highlight_mask[i, j],
                     tile_size=tile_size

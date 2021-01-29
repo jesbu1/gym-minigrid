@@ -7,6 +7,7 @@ from calculate_mdl import preprocess_codebook
 from gym_minigrid.window import Window
 import gym
 from collect_data import a_star
+from copy import deepcopy
 
 
 analysis_file = os.path.join(os.getcwd(), 'data/method6/analysis.csv')
@@ -45,10 +46,10 @@ plt.show()
 # plt.savefig('dl_a_star_correlation.png')
 
 # qualitative examples
-good_figure_dir = os.path.join(os.getcwd(), 'figures/gif/good/')
-bad_figure_dir = os.path.join(os.getcwd(), 'figures/gif/bad/')
+good_figure_dir = os.path.join(os.getcwd(), 'figures/good/')
+bad_figure_dir = os.path.join(os.getcwd(), 'figures/bad/')
 good_cb_name = 'code_book4.npy'
-bad_cb_name = 'code_book7.npy'
+bad_cb_name = 'code_book9.npy'
 with open(os.path.join(os.getcwd(), 'data/method6', good_cb_name), 'rb+') as f:
     good_cb = np.load(f, allow_pickle=True).item()
 with open(os.path.join(os.getcwd(), 'data/method6', bad_cb_name), 'rb+') as f:
@@ -62,34 +63,34 @@ good_cb = dict(list(good_cb.items())[:15])
 bad_cb = dict(sorted(bad_cb.items(), key=lambda item: item[1], reverse=True))
 bad_cb = dict(list(bad_cb.items())[:15])
 
-def run_and_save(codebook, image_dir):
+# make a fixed test env with trivial skills
+env = gym.make('MiniGrid-FourRoomsSkills-v0', train=False, skills=['0','1','2'], visualize=True)
+seed = np.random.randint(0,10000)
+env.seed(seed)
+window = Window('MiniGrid-FourRoomsSkills-v0')
 
-    def redraw():
-        img = env.render('rgb_array', tile_size=32)
-        window.show_img(img)
-        window.save_img(image_dir, env.step_count)
-        # print(f'Saving image_{env.step_count}.png to {image_dir}')
+count = 1
+total_frame = 10
+while count <= total_frame:
+    env.reset()
+    env_copy = deepcopy(env)
 
-    def reset():
-        seed = np.random.randint(0,10000)
-        env.seed(seed)
-        env.reset()
-        redraw()
+    good_sol, good_cost, good_search_path = a_star(env, codebook=good_cb, save_search_path=True)
+    bad_sol, bad_cost, bad_search_path = a_star(env, codebook=bad_cb, save_search_path=True)
+    print(f'good codebook cost: {good_cost}, bad codebook cost: {bad_cost}')
+    if bad_cost - good_cost < 50:
+        continue
 
-    def step(action):
-        _, _, done, _ = env.step(action)
-        if done:
-            reset()
-        else:
-            redraw()
+    env.add_heat(good_search_path)
+    env_copy.add_heat(bad_search_path)
 
-    skills = list(codebook.keys())
+    img = env.render('rgb_array')
+    window.show_img(img)
+    window.save_img(good_figure_dir, count)
 
-    env = gym.make('MiniGrid-FourRoomsSkills-v0', train=False, skills=skills, visualize=True)
-    window = Window('gym_minigrid - MiniGrid-FourRoomsSkills-v0')
-    reset()
+    img = env_copy.render('rgb_array')
+    window.show_img(img)
+    window.save_img(bad_figure_dir, count)
 
-    solution, cost = a_star(env, codebook=codebook)
-    print(cost)
-
-run_and_save(good_cb, good_figure_dir)
+    print(f'saved {count}th pair of comparison')
+    count += 1
