@@ -48,10 +48,10 @@ plt.savefig('figures/dl_a_star_correlation.png', bbox_inches="tight")
 plt.savefig('figures/dl_a_star_correlation.pdf', bbox_inches="tight")
 
 # qualitative examples
-good_figure_dir = os.path.join(os.getcwd(), 'figures/good/')
-bad_figure_dir = os.path.join(os.getcwd(), 'figures/bad/')
+good_figure_dir = os.path.join(os.getcwd(), 'figures/good_3/')
+bad_figure_dir = os.path.join(os.getcwd(), 'figures/bad_3/')
 good_cb_name = 'code_book4.npy'
-bad_cb_name = 'code_book9.npy'
+bad_cb_name = 'code_book5.npy'
 with open(os.path.join(os.getcwd(), 'data/method6', good_cb_name), 'rb+') as f:
     good_cb = np.load(f, allow_pickle=True).item()
 with open(os.path.join(os.getcwd(), 'data/method6', bad_cb_name), 'rb+') as f:
