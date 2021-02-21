@@ -866,13 +866,14 @@ def collect_data_method6(env, data_folder):
 
     trajectories = collect_trajectories(env, num=2000, show=False)
 
+    ranges = [(1,9), (2,8), (3,7), (4,6), (1,5,9), (2,5,8), (3,5,7), (4,5,6), (2,4,9), (3,4,8), (1,6,8), (2,6,7)]
 
-    for i in range(1,10):
+    for r in ranges:
 
-        code_book = build_codebook_method_2(trajectories, range(i,i+2), True)
+        code_book = build_codebook_method_2(trajectories, r, True)
         # print(code_book)
 
-        path = os.path.join(data_folder, 'code_book' + str(i) + '.npy')
+        path = os.path.join(data_folder, 'code_book' + '_'.join(tuple(map(str, r))) + '.npy')
         np.save(path, code_book)
         print('Codebook saved to %s' % path)
 
@@ -943,7 +944,7 @@ if __name__ == "__main__":
     env = GoalPositionWrapper(env)
     # show_init(env)
 
-    data_folder = './data/method6'
+    data_folder = './data/rerun'
 
     # collect_data_method6(env, data_folder)
     evaluate_data_method6(env, data_folder)
