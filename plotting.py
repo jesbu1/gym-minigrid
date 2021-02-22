@@ -16,7 +16,8 @@ correlation_method = 'pearson'
 
 # DL against RL
 x1 = df['codebook_dl']
-y1 = df['test_rl_auc']
+#y1 = df['test_rl_auc']
+y1 = df['test_rl_regret']
 correlation1 = x1.corr(y1, method=correlation_method)
 print(f'Correlation between DL and RL: {correlation1}')
 
@@ -25,8 +26,8 @@ plt.figure()
 plt.plot(x1, y1, '.')
 plt.plot(x1, b1 + m1 * x1, '--')
 plt.xlabel('Codebook DL')
-plt.ylabel('Area Under Curve (AUC)')
-plt.title(f'Correlation between DL and RL Reward AUC: {correlation1:.2f}')
+plt.ylabel('Regret')
+plt.title(f'Correlation between DL and RL Regret: {correlation1:.2f}')
 #plt.show()
 plt.savefig('figures/dl_rl_correlation.png', bbox_inches="tight")
 plt.savefig('figures/dl_rl_correlation.pdf', bbox_inches="tight")
