@@ -9,6 +9,10 @@ def calculate_auc(curve):
     epochs = np.arange(len(curve))
     return sk_metrics.auc(epochs, curve)
 
+def calculate_regret(curve):
+    upper_bound = 0.7849
+    return np.sum(upper_bound - curve)
+
 def smooth(list_of_list_of_scalars, weight: float):  # Weight between 0 and 1
     list_of_smoothed = []
     for scalars in list_of_list_of_scalars:
@@ -142,7 +146,7 @@ if __name__ == "__main__":
 
     # building a pandas dataframe
     pd_index = []
-    pd_dict = {'codebook_dl': [], 'num_symbols': [], 'train_rl_auc': [], 'test_rl_auc': []}
+    pd_dict = {'codebook_dl': [], 'num_symbols': [], 'train_rl_auc': [], 'test_rl_auc': [], 'test_rl_regret': []}
     if not has_rl:
         pd_dict.pop('train_rl_auc')
         pd_dict.pop('test_rl_auc')
@@ -177,6 +181,7 @@ if __name__ == "__main__":
         if has_rl:
             pd_dict['train_rl_auc'].append(calculate_auc(metrics[name]['train']))
             pd_dict['test_rl_auc'].append(calculate_auc(metrics[name]['test']))
+            pd_dict['test_rl_regret'].append(calculate_regret(metrics[name]['test']))
     df = pd.DataFrame(data=pd_dict, index=pd_index)
     correlation_method = 'pearson'
     #printing correlation of codebook description length and other metrics
