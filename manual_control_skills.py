@@ -14,7 +14,7 @@ def redraw(img):
         img = env.render('rgb_array', tile_size=args.tile_size)
 
     window.show_img(img)
-    window.save_img(os.path.join(os.getcwd(), 'figures/gif'), env.step_count)
+    window.save_img(os.path.join(os.getcwd(), 'figures/gif'), f'frame_{env.step_count}.png')
 
 def reset():
     if args.seed != -1:

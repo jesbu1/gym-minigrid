@@ -17,7 +17,30 @@ COLORS = {
     'blue': np.array([0, 0, 255]),
     'purple': np.array([112, 39, 195]),
     'yellow': np.array([255, 255, 0]),
-    'grey': np.array([100, 100, 100])
+    'grey': np.array([100, 100, 100]),
+    'cyan': np.array([0, 255, 255]),
+    'magenta': np.array([255, 0, 255]),
+    'maroon': np.array([128, 0, 0]),
+    'olive': np.array([128, 128, 0]),
+    'navy': np.array([0, 0, 128]),
+    'teal': np.array([0, 128, 128]),
+    'lime': np.array([0, 255, 0]),
+    'silver': np.array([192, 192, 192]),
+}
+
+SKILL_COLORS = {
+    'blue': np.array([0, 0, 255]),
+    'purple': np.array([112, 39, 195]),
+    'yellow': np.array([255, 255, 0]),
+    'grey': np.array([100, 100, 100]),
+    'cyan': np.array([0, 255, 255]),
+    'magenta': np.array([255, 0, 255]),
+    'maroon': np.array([128, 0, 0]),
+    'olive': np.array([128, 128, 0]),
+    'navy': np.array([0, 0, 128]),
+    'teal': np.array([0, 128, 128]),
+    'lime': np.array([0, 255, 0]),
+    'silver': np.array([192, 192, 192]),
 }
 
 COLOR_NAMES = sorted(list(COLORS.keys()))
@@ -29,7 +52,15 @@ COLOR_TO_IDX = {
     'blue': 2,
     'purple': 3,
     'yellow': 4,
-    'grey': 5
+    'grey': 5,
+    'cyan': 6,
+    'magenta': 7,
+    'maroon': 8,
+    'olive': 9,
+    'navy': 10,
+    'teal': 11,
+    'lime': 12,
+    'silver': 13,
 }
 
 IDX_TO_COLOR = dict(zip(COLOR_TO_IDX.values(), COLOR_TO_IDX.keys()))
@@ -352,6 +383,7 @@ class Grid:
 
         self.grid = [None] * width * height
         self.heat_map = {}
+        self.path = {}
 
     def __contains__(self, key):
         if isinstance(key, WorldObj):
@@ -463,6 +495,11 @@ class Grid:
                 self.heat_map[(x,y)] = 1
             else:
                 self.heat_map[(x,y)] = self.heat_map[(x,y)] + 1
+
+    def set_path(self, i, j, skill):
+        self.path[(i,j)] = skill
+        ball = Ball(color=list(SKILL_COLORS.keys())[skill])
+        self.set(i, j, ball)
 
     @classmethod
     def render_tile(
@@ -1276,7 +1313,7 @@ class MiniGridEnv(gym.Env):
 
         return img
 
-    def render(self, mode='human', close=False, highlight=True, tile_size=TILE_PIXELS):
+    def render(self, mode='human', close=False, highlight=True, tile_size=TILE_PIXELS, visible_mask=True):
         """
         Render the whole-grid human view
         """
@@ -1303,23 +1340,24 @@ class MiniGridEnv(gym.Env):
         # Mask of which cells to highlight
         highlight_mask = np.zeros(shape=(self.width, self.height), dtype=np.bool)
 
-        # For each cell in the visibility mask
-        for vis_j in range(0, self.agent_view_size):
-            for vis_i in range(0, self.agent_view_size):
-                # If this cell is not visible, don't highlight it
-                if not vis_mask[vis_i, vis_j]:
-                    continue
+        if visible_mask:
+            # For each cell in the visibility mask
+            for vis_j in range(0, self.agent_view_size):
+                for vis_i in range(0, self.agent_view_size):
+                    # If this cell is not visible, don't highlight it
+                    if not vis_mask[vis_i, vis_j]:
+                        continue
 
-                # Compute the world coordinates of this cell
-                abs_i, abs_j = top_left - (f_vec * vis_j) + (r_vec * vis_i)
+                    # Compute the world coordinates of this cell
+                    abs_i, abs_j = top_left - (f_vec * vis_j) + (r_vec * vis_i)
 
-                if abs_i < 0 or abs_i >= self.width:
-                    continue
-                if abs_j < 0 or abs_j >= self.height:
-                    continue
+                    if abs_i < 0 or abs_i >= self.width:
+                        continue
+                    if abs_j < 0 or abs_j >= self.height:
+                        continue
 
-                # Mark this cell to be highlighted
-                highlight_mask[abs_i, abs_j] = True
+                    # Mark this cell to be highlighted
+                    highlight_mask[abs_i, abs_j] = True
 
         # Render the whole grid
         img = self.grid.render(

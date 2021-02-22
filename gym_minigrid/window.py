@@ -39,9 +39,9 @@ class Window:
 
         self.fig.canvas.mpl_connect('close_event', close_handler)
 
-    def save_img(self, path, frame):
+    def save_img(self, path, name):
         import os
-        image_file = os.path.join(path, f'frame_{frame}.png')
+        image_file = os.path.join(path, name)
         plt.savefig(image_file)
 
     def show_img(self, img):

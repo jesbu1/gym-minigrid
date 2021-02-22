@@ -85,7 +85,16 @@ class FourRoomsSkillsEnv(MiniGridEnv):
     def add_heat(self, search_path):
         self.grid.add_heat(search_path)
 
-    def step(self, action):
+    def update_skills(self, skills):
+        self._skills = skills
+        self.action_space = spaces.Discrete(len(self._skills))
+
+    def set_path(self, i, j, skill):
+        if (i,j) == self.goal_pos or i == self.agent_pos[0] and j == self.agent_pos[1]:
+            return
+        self.grid.set_path(i,j,skill)
+
+    def step(self, action, skill=None):
         total_reward = 0
         actual_action = self._skills[action]
         for primitive_action in actual_action:

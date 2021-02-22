@@ -99,6 +99,22 @@ def one_step(curr_entry, action):
     return new_entry
 
 
+def rollout(env, actions):
+    agent_pos = env.agent_pos
+    goal_pos = env.goal_pos
+    agent_dir = env.agent_dir
+    curr_entry = (agent_pos[0], agent_pos[1], agent_dir)
+
+    path = []
+    for i, action in enumerate(actions):
+        for a in action:
+            next_entry = one_step(curr_entry, a)
+            if is_valid(env, next_entry):
+                curr_entry = next_entry
+                path.append((curr_entry[0], curr_entry[1], i))
+    return path
+
+
 def a_star(env, skills=None, codebook=None, length_range=None, save_search_path=False):
 
     agent_pos = env.agent_pos
