@@ -31,8 +31,8 @@ plt.xlabel('Codebook DL')
 plt.ylabel('Regret')
 plt.title(f'Correlation between DL and RL Regret: {correlation1:.2f}')
 #plt.show()
-plt.savefig('figures/dl_rl_correlation.png', bbox_inches="tight")
-plt.savefig('figures/dl_rl_correlation.pdf', bbox_inches="tight")
+plt.savefig('figures/rerun/dl_rl_correlation.png', bbox_inches="tight")
+plt.savefig('figures/rerun/dl_rl_correlation.pdf', bbox_inches="tight")
 
 # DL against augmented A*
 y2 = df['test_node_cost']
@@ -47,8 +47,8 @@ plt.xlabel('Codebook DL')
 plt.ylabel('Search Cost (node expanded)')
 plt.title(f'Correlation between DL and A* search: {correlation2:.2f}')
 #plt.show()
-plt.savefig('figures/dl_a_star_correlation.png', bbox_inches="tight")
-plt.savefig('figures/dl_a_star_correlation.pdf', bbox_inches="tight")
+plt.savefig('figures/rerun/dl_a_star_correlation.png', bbox_inches="tight")
+plt.savefig('figures/rerun/dl_a_star_correlation.pdf', bbox_inches="tight")
 
 # qualitative examples
 good_cb_name = 'code_book4_6.npy'
