@@ -110,6 +110,8 @@ if __name__ == "__main__":
     previous_length_range = None
     track_probs = True
     for codebook in codebooks:
+        if '4_6' in codebook[0] or '3_7' in codebook[0] or '2_8' in codebook[0] or '1_9' in codebook[0]:
+            continue
         length_range = codebook[1].pop('length_range')
         probabilities = codebook[1].pop('probabilities')
         if track_probs != False:
@@ -141,6 +143,8 @@ if __name__ == "__main__":
     trajectory_dict = dict(train={}, test={}, probabilities={})
     for codebook_name, evaluation in evaluations:
         original_name = codebook_name.replace("trajectories_", "")
+        if '4_6' in original_name or '3_7' in original_name or '2_8' in original_name or '1_9' in original_name:
+            continue
         codebook_info = codebook_dict[original_name]
         process_evaluation(evaluation, codebook_info['codec'], codebook_info['tree_bits'], original_name, trajectory_dict) 
 
