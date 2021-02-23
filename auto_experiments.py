@@ -32,7 +32,7 @@ def run(which_gpus, max_worker_num, data_folder, train, num_seeds, num_actions):
 
     for file in os.listdir(data_folder):
         for iteration in range(num_seeds):
-            if file.endswith('.npy'):
+            if file.endswith('.npy') and '1_5_9' in file or '2_4_9' in file or '2_6_7' in file or '3_4_8' in file:
                 process_pool.apply_async(
                     func=_worker,
                     args=[data_folder, file, train, device_queue, num_actions],
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     parser.add_argument(
         '--which_gpus',
         help='used gpus',
-        default=[0, 1, 2]
+        default=[0, 1]
     )
     parser.add_argument(
         '--data_folder',
