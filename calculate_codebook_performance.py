@@ -143,7 +143,7 @@ if __name__ == "__main__":
 
     evaluations = discover_evaluations(os.path.join(args.location, 'evaluations'))
     has_rl = False
-    try: 
+    try:
         metrics = calculate_codebook_metrics(args.location)
         has_rl = True
     except FileNotFoundError as e:
@@ -163,8 +163,11 @@ if __name__ == "__main__":
     if not has_rl:
         pd_dict.pop('train_rl_auc')
         pd_dict.pop('test_rl_auc')
+        pd_dict.pop('test_rl_regret')
         pd_dict.pop('test_auc_variance')
         pd_dict.pop('test_regret_variance')
+        pd_dict.pop('test_aucs')
+        pd_dict.pop('test_regrets')
     length_set = set()
     for name, dl, *_ in sorted_codebooks_by_dl:
         pd_index.append(name)
@@ -206,11 +209,11 @@ if __name__ == "__main__":
             pd_dict['test_regrets'].append(test_regrets)
     df = pd.DataFrame(data=pd_dict, index=pd_index)
     correlation_method = 'pearson'
-    #printing correlation of codebook description length and other metrics
-    # for column in df.columns:
-    #     if column != 'codebook_dl' and column not in length_set and column:
-    #         correlation = df['codebook_dl'].corr(df[column], method=correlation_method)
-    #         print(column, correlation)
+    # printing correlation of codebook description length and other metrics
+    for column in df.columns:
+        if column != 'codebook_dl' and column not in length_set and column != 'test_aucs' and column != 'test_regrets':
+            correlation = df['codebook_dl'].corr(df[column], method=correlation_method)
+            print(column, correlation)
     """
     if track_probs:
         #printing correlation of frequency of skill length and all metrics
@@ -228,4 +231,4 @@ if __name__ == "__main__":
     #            if "train" in col2 and (col1 != col2):
     #                correlation = df[col1].corr(df[col2], method=correlation_method)
     #                print(col1, col2, correlation)
-    df.to_csv(os.path.join(args.location, 'analysis_test.csv'))
+    df.to_csv(os.path.join(args.location, 'analysis_new.csv'))

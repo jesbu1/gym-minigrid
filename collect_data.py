@@ -882,7 +882,30 @@ def collect_data_method6(env, data_folder):
 
     trajectories = collect_trajectories(env, num=2000, show=False)
 
-    ranges = [(1,9), (2,8), (3,7), (4,6), (1,5,9), (2,5,8), (3,5,7), (4,5,6), (2,4,9), (3,4,8), (1,6,8), (2,6,7)]
+    # ranges = [(1,9), (2,8), (3,7), (4,6), (1,5,9), (2,5,8), (3,5,7), (4,5,6), (2,4,9), (3,4,8), (1,6,8), (2,6,7)]
+    ranges = [# (1, 2, 3, 14),
+              # (1, 2, 4, 13),
+              # (1, 2, 5, 12),
+              # (1, 2, 6, 11),
+              # (1, 2, 7, 10),
+              (1, 2, 8, 9),
+              # (1, 3, 4, 12),
+              # (1, 3, 5, 11),
+              # (1, 3, 6, 10),
+              (1, 3, 7, 9),
+              # (1, 4, 5, 10),
+              (1, 4, 6, 9),
+              (1, 4, 7, 8),
+              (1, 5, 6, 8),
+              # (2, 3, 4, 11),
+              # (2, 3, 5, 10),
+              (2, 3, 6, 9),
+              (2, 3, 7, 8),
+              (2, 4, 5, 9),
+              (2, 4, 6, 8),
+              (2, 5, 6, 7),
+              (3, 4, 5, 8),
+              (3, 4, 6, 7)]
 
     for r in ranges:
 
@@ -923,7 +946,7 @@ def evaluate_data_method6(env, data_folder, num_actions=15, seed=None):
     if seed is not None:
         env.seed(seed)
 
-    codebooks_pre = discover_codebooks(data_folder)
+    codebooks_pre = discover_codebooks(os.path.join(data_folder, 'new_dir'))
     codebooks = [(file_name, preprocess_codebook(codebook)[1], codebook['length_range'])
                  for file_name, codebook in codebooks_pre]
     for i in range(len(codebooks)):

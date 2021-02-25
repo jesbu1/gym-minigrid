@@ -12,12 +12,12 @@ import imageio
 from collect_data import rollout
 
 
-analysis_file = os.path.join(os.getcwd(), 'data/rerun/analysis_test.csv')
+analysis_file = os.path.join(os.getcwd(), 'data/rerun/analysis_new.csv')
 df = pd.read_csv(analysis_file)
-# df = df.drop([0,1,2,6])  # dropping all codebook with 2 lengths
+# df = df.drop([0,2,6])  # dropping high var cbs
 correlation_method = 'pearson'
 
-# DL against RL
+# # DL against RL
 x1 = df['codebook_dl']
 #y1 = df['test_rl_auc']
 y1 = df['test_rl_regret']
@@ -59,7 +59,7 @@ plt.show()
 # plt.show()
 # # plt.savefig('figures/rerun/dl_a_star_correlation.png', bbox_inches="tight")
 # # plt.savefig('figures/rerun/dl_a_star_correlation.pdf', bbox_inches="tight")
-#
+
 # # qualitative examples
 # good_cb_name = 'code_book4_6.npy'
 # bad_cb_name = 'code_book3_4_8.npy'
