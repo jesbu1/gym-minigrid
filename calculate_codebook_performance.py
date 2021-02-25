@@ -5,13 +5,21 @@ import os
 import pandas as pd
 from sklearn import metrics as sk_metrics
 
-def calculate_auc(curve):
-    epochs = np.arange(len(curve))
-    return sk_metrics.auc(epochs, curve)
+def calculate_auc(curves):
+    aucs = []
+    for curve in curves:
+        curve = np.array(curve)
+        epochs = np.arange(len(curve))
+        aucs.append(sk_metrics.auc(epochs, curve))
+    return np.mean(aucs), np.var(aucs), aucs
 
-def calculate_regret(curve):
-    upper_bound = 0.7849
-    return np.sum(upper_bound - curve)
+def calculate_regret(curves):
+    regrets = []
+    for curve in curves:
+        curve = np.array(curve)
+        upper_bound = 0.7849
+        regrets.append(np.sum(upper_bound - curve))
+    return np.mean(regrets), np.var(regrets), regrets
 
 def smooth(list_of_list_of_scalars, weight: float):  # Weight between 0 and 1
     list_of_smoothed = []
@@ -51,8 +59,8 @@ def calculate_codebook_metrics(location):
     for codebook_file in metrics.keys():
         smoothed_train = smooth(metrics[codebook_file]['train'], 0.5)
         smoothed_test = smooth(metrics[codebook_file]['test'], 0.5)
-        metrics[codebook_file]['train'] = np.mean(smoothed_train, axis=0)
-        metrics[codebook_file]['test'] = np.mean(smoothed_test, axis=0)
+        metrics[codebook_file]['train'] = smoothed_train # (np.mean(smoothed_train, axis=0), np.var(smoothed_train))
+        metrics[codebook_file]['test'] = smoothed_test # (np.mean(smoothed_test, axis=0), np.var(smoothed_test))
     return metrics 
 
 def discover_evaluations(location):
@@ -150,10 +158,13 @@ if __name__ == "__main__":
 
     # building a pandas dataframe
     pd_index = []
-    pd_dict = {'codebook_dl': [], 'num_symbols': [], 'train_rl_auc': [], 'test_rl_auc': [], 'test_rl_regret': []}
+    pd_dict = {'codebook_dl': [], 'num_symbols': [], 'train_rl_auc': [], 'test_rl_auc': [], 'test_rl_regret': [],
+               'test_auc_variance': [], 'test_regret_variance': [], 'test_aucs': [], 'test_regrets': []}
     if not has_rl:
         pd_dict.pop('train_rl_auc')
         pd_dict.pop('test_rl_auc')
+        pd_dict.pop('test_auc_variance')
+        pd_dict.pop('test_regret_variance')
     length_set = set()
     for name, dl, *_ in sorted_codebooks_by_dl:
         pd_index.append(name)
@@ -183,16 +194,23 @@ if __name__ == "__main__":
                 pd_dict[length].append(codebook_dict[name]['probabilities'][i])
         pd_dict['num_symbols'].append(len(codebook_dict[name]['codec'].get_code_table()))
         if has_rl:
-            pd_dict['train_rl_auc'].append(calculate_auc(metrics[name]['train']))
-            pd_dict['test_rl_auc'].append(calculate_auc(metrics[name]['test']))
-            pd_dict['test_rl_regret'].append(calculate_regret(metrics[name]['test']))
+            train_auc_mean, train_auc_var, train_aucs = calculate_auc(metrics[name]['train'])
+            test_auc_mean, test_auc_var, test_aucs = calculate_auc(metrics[name]['test'])
+            test_regret_mean, test_regret_var, test_regrets = calculate_regret(metrics[name]['test'])
+            pd_dict['train_rl_auc'].append(train_auc_mean)
+            pd_dict['test_rl_auc'].append(test_auc_mean)
+            pd_dict['test_rl_regret'].append(test_regret_mean)
+            pd_dict['test_auc_variance'].append(test_auc_var)
+            pd_dict['test_regret_variance'].append(test_regret_var)
+            pd_dict['test_aucs'].append(test_aucs)
+            pd_dict['test_regrets'].append(test_regrets)
     df = pd.DataFrame(data=pd_dict, index=pd_index)
     correlation_method = 'pearson'
     #printing correlation of codebook description length and other metrics
-    for column in df.columns:
-        if column != 'codebook_dl' and column not in length_set:
-            correlation = df['codebook_dl'].corr(df[column], method=correlation_method)
-            print(column, correlation)
+    # for column in df.columns:
+    #     if column != 'codebook_dl' and column not in length_set and column:
+    #         correlation = df['codebook_dl'].corr(df[column], method=correlation_method)
+    #         print(column, correlation)
     """
     if track_probs:
         #printing correlation of frequency of skill length and all metrics
@@ -210,4 +228,4 @@ if __name__ == "__main__":
     #            if "train" in col2 and (col1 != col2):
     #                correlation = df[col1].corr(df[col2], method=correlation_method)
     #                print(col1, col2, correlation)
-    df.to_csv(os.path.join(args.location, 'analysis.csv'))
+    df.to_csv(os.path.join(args.location, 'analysis_test.csv'))
