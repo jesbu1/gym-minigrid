@@ -32,7 +32,8 @@ def run(which_gpus, max_worker_num, data_folder, train, num_seeds, num_actions):
 
     for file in os.listdir(data_folder):
         for iteration in range(num_seeds):
-            if file.endswith('.npy'):
+            if file.endswith('.npy') and '2_4_9' in file or '4_5_6' in file or '2_6_7' in file:
+                #print(file)
                 process_pool.apply_async(
                     func=_worker,
                     args=[data_folder, file, train, device_queue, num_actions],
@@ -54,7 +55,7 @@ def _worker(data_folder, file_name, train, device_queue, num_actions):
         skills = [list(map(int, skill)) for skill in codebook_clipped.keys()]
 
         # run experiment
-        experiment_name = 'vis_' + file_name.replace('.npy', '')
+        experiment_name = 'rl_' + file_name.replace('.npy', '')
 
         name_append = 'train' if train else 'test'
         run_rl(experiment_name, os.path.join(os.getcwd(), data_folder, f'vis_{name_append}', experiment_name), train, skills, gpu_id)
@@ -71,13 +72,13 @@ if __name__ == "__main__":
     parser.add_argument(
         '--which_gpus',
         help='used gpus',
-        default=[0, 1]
+        default=[0, 1, 2]
     )
     parser.add_argument(
         '--data_folder',
         help='codebooks folder',
         type=str,
-        default='data/method6'
+        default='data/rerun'
     )
     parser.add_argument(
         '--train',
