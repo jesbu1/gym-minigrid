@@ -31,8 +31,12 @@ def run(which_gpus, max_worker_num, data_folder, train, num_seeds, num_actions):
     device_queue = _init_device_queue(which_gpus, max_worker_num)
 
     for file in os.listdir(data_folder):
+        if '2_4_9' in file or '4_5_6' in file or '2_6_7' in file:
+            num_seeds = 2
+        elif file.endswith('npy'):
+            num_seeds = 5
         for iteration in range(num_seeds):
-            if file.endswith('.npy') and '2_4_9' in file or '4_5_6' in file or '2_6_7' in file:
+            if file.endswith('.npy'):
                 #print(file)
                 process_pool.apply_async(
                     func=_worker,
@@ -58,7 +62,7 @@ def _worker(data_folder, file_name, train, device_queue, num_actions):
         experiment_name = 'rl_' + file_name.replace('.npy', '')
 
         name_append = 'train' if train else 'test'
-        run_rl(experiment_name, os.path.join(os.getcwd(), data_folder, f'vis_{name_append}', experiment_name), train, skills, gpu_id)
+        run_rl(experiment_name, os.path.join(os.getcwd(), data_folder, f'rl_{name_append}', experiment_name), train, skills, gpu_id)
 
         device_queue.put(gpu_id)
 
