@@ -21,6 +21,7 @@ df_vis = df.drop(['train_num_primitive_actions', 'train_num_abstract_actions', '
               'test_num_abstract_actions', 'test_code_length', 'test_description_length',
               'test_auc_std', 'test_regret_std', 'num_symbols', 'test_rl_auc'], axis=1)
 correlation_method = 'pearson'
+show_img = False
 
 # # DL against RL
 dropped = [0,1,2,6,8,9,12,14,19,21]  # outliers
@@ -47,13 +48,18 @@ x = np.linspace(33000,46000)
 plt.plot(x, b1 + m1 * x, '--', c='#ff7f0e')
 locs, _ = plt.xticks()
 locs = locs[::2]
-plt.xticks(locs, fontsize=12)
+plt.xticks(locs, fontsize=14)
 locs, _ = plt.yticks()
 locs = locs[::2]
-plt.yticks(locs, fontsize=12)
+plt.yticks(locs, fontsize=14)
 plt.xlim(33000, 46000)
-# plt.show()
-plt.savefig('regret_se.png')
+plt.xlabel('Description Length', fontsize=14)
+plt.ylabel('Regret', fontsize=14)
+plt.title(f'Correlation between DL and RL Regret: {correlation1:.2f}', fontsize=14)
+if show_img:
+    plt.show()
+else:
+    plt.savefig('regret_se_caption.png')
 
 # plt.figure()
 # plt.boxplot(rs, showfliers=False)
@@ -73,13 +79,18 @@ plt.scatter(x2, y2)
 plt.plot(x, b2 + m2 * x, '--', c='#ff7f0e')
 locs, _ = plt.xticks()
 locs = locs[::2]
-plt.xticks(locs, fontsize=12)
+plt.xticks(locs, fontsize=14)
 locs, _ = plt.yticks()
 locs = locs[::2]
-plt.yticks(locs, fontsize=12)
+plt.yticks(locs, fontsize=14)
 plt.xlim(33000, 46000)
-# plt.show()
-plt.savefig(f'a_star.png')
+plt.xlabel('Description Length', fontsize=14)
+plt.ylabel('A* Search Cost', fontsize=14)
+plt.title(f'Correlation between DL and A* Cost: {correlation2:.2f}', fontsize=14)
+if show_img:
+    plt.show()
+else:
+    plt.savefig(f'a_star_caption.png')
 
 '''
 # qualitative examples
