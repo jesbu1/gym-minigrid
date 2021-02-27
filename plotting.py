@@ -10,55 +10,75 @@ from collect_data import a_star
 from copy import deepcopy
 import imageio
 from collect_data import rollout
+from ast import literal_eval
 
 
 analysis_file = os.path.join(os.getcwd(), 'data/rerun/analysis_new.csv')
 df = pd.read_csv(analysis_file)
-# df = df.drop([0,2,6])  # dropping high var cbs
+# remove unnecessary columns for debug vis
+df_vis = df.drop(['train_num_primitive_actions', 'train_num_abstract_actions', 'train_code_length',
+              'train_description_length', 'train_node_cost', 'test_num_primitive_actions',
+              'test_num_abstract_actions', 'test_code_length', 'test_description_length',
+              'test_auc_std', 'test_regret_std', 'num_symbols', 'test_rl_auc'], axis=1)
 correlation_method = 'pearson'
 
 # # DL against RL
-x1 = df['codebook_dl']
-#y1 = df['test_rl_auc']
-y1 = df['test_rl_regret']
-v1 = df['test_regret_variance']
-
-# aucs = df['test_aucs'].to_numpy()
-# regrets = df['test_regrets'].to_numpy()
+dropped = [0,1,2,6,8,9,12,14,19,21]  # outliers
+df_rl = df.drop(dropped)
+x1 = df_rl['codebook_dl']
+y1 = df_rl['test_rl_regret']
+v1 = df_rl['test_regret_std']
+# v1 = v1/np.sqrt(8)  # convert SE
+rs = df_rl['test_regrets'].apply(literal_eval).to_numpy()
+rs = [np.array(r) for r in rs]
 
 correlation1 = x1.corr(y1, method=correlation_method)
 print(f'Correlation between DL and RL: {correlation1}')
 
 plt.figure()
-# b1, m1 = polyfit(x1, y1, 1)
-# plt.plot(x1, y1)
-# plt.plot(x1, b1 + m1 * x1, '--')
+b1, m1 = polyfit(x1, y1, 1)
+plt.scatter(x1, y1)
+# plt.scatter(x1, y1+v1)
+# plt.scatter(x1, y1-v1)
+plt.vlines(x1, y1-v1, y1+v1)
+plt.hlines(y1-v1, x1-150, x1+150)
+plt.hlines(y1+v1, x1-150, x1+150)
+plt.plot(x1, b1 + m1 * x1, '--')
+# plt.show()
+plt.savefig('regret_std.png')
 
-# plt.plot(x1, y1)
-plt.errorbar(x1, y1, v1, marker='.')
-
-plt.xlabel('Codebook DL')
-plt.ylabel('Regret')
-plt.title(f'Correlation between DL and RL Regret: {correlation1:.2f}')
+plt.figure()
+plt.boxplot(rs, showfliers=False)
 plt.show()
+# plt.savefig('regret.png')
+
+# plt.xlabel('Codebook DL')
+# plt.ylabel('Regret')
+# plt.title(f'Correlation between DL and RL Regret: {correlation1:.2f}')
+# plt.show()
 # plt.savefig('figures/rerun/dl_rl_correlation.png', bbox_inches="tight")
 # plt.savefig('figures/rerun/dl_rl_correlation.pdf', bbox_inches="tight")
 
-# # DL against augmented A*
-# y2 = df['test_node_cost']
-# b2, m2 = polyfit(x1, y2, 1)
-# correlation2 = x1.corr(y2, method=correlation_method)
-# print(f'Correlation between DL and A*: {correlation2}')
-#
-# plt.figure()
-# plt.plot(x1, y2, '.')
-# plt.plot(x1, b2 + m2 * x1, '--')
+# DL against augmented A*
+df_a_star = df.drop(dropped)
+x2 = df_a_star['codebook_dl']
+y2 = df_a_star['test_node_cost']
+b2, m2 = polyfit(x2, y2, 1)
+correlation2 = x2.corr(y2, method=correlation_method)
+print(f'Correlation between DL and A*: {correlation2}')
+
+plt.figure()
+plt.plot(x2, y2, '.')
+plt.plot(x2, b2 + m2 * x2, '--')
+plt.show()
+# plt.savefig(f'a_star.png')
+
 # plt.xlabel('Codebook DL')
 # plt.ylabel('Search Cost (node expanded)')
 # plt.title(f'Correlation between DL and A* search: {correlation2:.2f}')
 # plt.show()
-# # plt.savefig('figures/rerun/dl_a_star_correlation.png', bbox_inches="tight")
-# # plt.savefig('figures/rerun/dl_a_star_correlation.pdf', bbox_inches="tight")
+# plt.savefig('figures/rerun/dl_a_star_correlation.png', bbox_inches="tight")
+# plt.savefig('figures/rerun/dl_a_star_correlation.pdf', bbox_inches="tight")
 
 # # qualitative examples
 # good_cb_name = 'code_book4_6.npy'

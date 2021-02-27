@@ -11,7 +11,7 @@ def calculate_auc(curves):
         curve = np.array(curve)
         epochs = np.arange(len(curve))
         aucs.append(sk_metrics.auc(epochs, curve))
-    return np.mean(aucs), np.var(aucs), aucs
+    return np.mean(aucs), np.std(aucs), np.array(aucs).tolist()
 
 def calculate_regret(curves):
     regrets = []
@@ -19,7 +19,7 @@ def calculate_regret(curves):
         curve = np.array(curve)
         upper_bound = 0.7849
         regrets.append(np.sum(upper_bound - curve))
-    return np.mean(regrets), np.var(regrets), regrets
+    return np.mean(regrets), np.std(regrets), np.array(regrets).tolist()
 
 def smooth(list_of_list_of_scalars, weight: float):  # Weight between 0 and 1
     list_of_smoothed = []
@@ -118,8 +118,6 @@ if __name__ == "__main__":
     previous_length_range = None
     track_probs = True
     for codebook in codebooks:
-        if '4_6' in codebook[0] or '3_7' in codebook[0] or '2_8' in codebook[0] or '1_9' in codebook[0]:
-            continue
         length_range = codebook[1].pop('length_range')
         probabilities = codebook[1].pop('probabilities')
         if track_probs != False:
@@ -151,30 +149,25 @@ if __name__ == "__main__":
     trajectory_dict = dict(train={}, test={}, probabilities={})
     for codebook_name, evaluation in evaluations:
         original_name = codebook_name.replace("trajectories_", "")
-        if '4_6' in original_name or '3_7' in original_name or '2_8' in original_name or '1_9' in original_name:
-            continue
         codebook_info = codebook_dict[original_name]
         process_evaluation(evaluation, codebook_info['codec'], codebook_info['tree_bits'], original_name, trajectory_dict) 
 
     # building a pandas dataframe
     pd_index = []
-    pd_dict = {'codebook_dl': [], 'num_symbols': [], 'train_rl_auc': [], 'test_rl_auc': [], 'test_rl_regret': [],
-               'test_auc_variance': [], 'test_regret_variance': [], 'test_aucs': [], 'test_regrets': []}
+    pd_dict = {'codebook_dl': [], 'num_symbols': [], 'test_rl_auc': [], 'test_rl_regret': [],
+               'test_auc_std': [], 'test_regret_std': [], 'test_regrets': []}
     if not has_rl:
-        pd_dict.pop('train_rl_auc')
         pd_dict.pop('test_rl_auc')
         pd_dict.pop('test_rl_regret')
-        pd_dict.pop('test_auc_variance')
-        pd_dict.pop('test_regret_variance')
-        pd_dict.pop('test_aucs')
+        pd_dict.pop('test_auc_std')
+        pd_dict.pop('test_regret_std')
         pd_dict.pop('test_regrets')
     length_set = set()
     for name, dl, *_ in sorted_codebooks_by_dl:
         pd_index.append(name)
         def accumulate_values(traj_type):
             values_to_track = ['num_primitive_actions', 'num_abstract_actions', 'code_length', 'description_length', 'node_cost']
-            #values_to_track = ['node_cost']
-            values = [0 for _ in values_to_track] 
+            values = [0 for _ in values_to_track]
             for start_end_pair in trajectory_dict[traj_type].keys():
                 for i, value_name in enumerate(values_to_track):
                     values[i] += trajectory_dict[traj_type][start_end_pair][name][value_name]
@@ -197,15 +190,12 @@ if __name__ == "__main__":
                 pd_dict[length].append(codebook_dict[name]['probabilities'][i])
         pd_dict['num_symbols'].append(len(codebook_dict[name]['codec'].get_code_table()))
         if has_rl:
-            train_auc_mean, train_auc_var, train_aucs = calculate_auc(metrics[name]['train'])
-            test_auc_mean, test_auc_var, test_aucs = calculate_auc(metrics[name]['test'])
-            test_regret_mean, test_regret_var, test_regrets = calculate_regret(metrics[name]['test'])
-            pd_dict['train_rl_auc'].append(train_auc_mean)
+            test_auc_mean, test_auc_std, test_aucs = calculate_auc(metrics[name]['test'])
+            test_regret_mean, test_regret_std, test_regrets = calculate_regret(metrics[name]['test'])
             pd_dict['test_rl_auc'].append(test_auc_mean)
             pd_dict['test_rl_regret'].append(test_regret_mean)
-            pd_dict['test_auc_variance'].append(test_auc_var)
-            pd_dict['test_regret_variance'].append(test_regret_var)
-            pd_dict['test_aucs'].append(test_aucs)
+            pd_dict['test_auc_std'].append(test_auc_std)
+            pd_dict['test_regret_std'].append(test_regret_std)
             pd_dict['test_regrets'].append(test_regrets)
     df = pd.DataFrame(data=pd_dict, index=pd_index)
     correlation_method = 'pearson'

@@ -304,7 +304,7 @@ def in_room(pos):
 
 
 # exclude 4 of the 16 starting agent/goal positions
-def training_valid(env):
+def  training_valid(env):
     agent_pos = env.agent_pos
     goal_pos = env.goal_pos
     agent_goal = (in_room(agent_pos), in_room(goal_pos))
