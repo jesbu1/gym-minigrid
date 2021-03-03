@@ -21,7 +21,7 @@ df_vis = df.drop(['train_num_primitive_actions', 'train_num_abstract_actions', '
               'test_num_abstract_actions', 'test_code_length', 'test_description_length',
               'test_auc_std', 'test_regret_std', 'num_symbols', 'test_rl_auc'], axis=1)
 correlation_method = 'pearson'
-show_img = False
+show_img = True
 
 # # DL against RL
 dropped = [0,1,2,6,8,9,12,14,19,21]  # outliers
@@ -39,8 +39,6 @@ print(f'Correlation between DL and RL: {correlation1}')
 plt.figure()
 b1, m1 = polyfit(x1, y1, 1)
 plt.scatter(x1, y1)
-# plt.scatter(x1, y1+v1)
-# plt.scatter(x1, y1-v1)
 plt.vlines(x1, y1-v1, y1+v1)
 plt.hlines(y1-v1, x1-150, x1+150)
 plt.hlines(y1+v1, x1-150, x1+150)
@@ -53,10 +51,11 @@ locs, _ = plt.yticks()
 locs = locs[::3]
 plt.yticks(locs, fontsize=16)
 plt.xlim(33000, 46000)
-plt.xlabel('Description Length', fontsize=16)
-plt.ylabel('Regret', fontsize=16)
-plt.title(f'Correlation between DL and RL Regret: {correlation1:.2f}', fontsize=16)
+plt.xlabel('Description Length', fontsize=18, fontweight='bold')
+plt.ylabel('Regret', fontsize=18, fontweight='bold')
+plt.title(f'RL Correlation: {correlation1:.2f}', fontsize=20, fontweight='bold')
 if show_img:
+    plt.tight_layout()
     plt.show()
 else:
     plt.tight_layout()
@@ -85,10 +84,11 @@ locs, _ = plt.yticks()
 locs = locs[::2]
 plt.yticks(locs, fontsize=16)
 plt.xlim(33000, 46000)
-plt.xlabel('Description Length', fontsize=16)
-plt.ylabel('A* Search Cost', fontsize=16)
-plt.title(f'Correlation between DL and A* Cost: {correlation2:.2f}', fontsize=16)
+plt.xlabel('Description Length', fontsize=18, fontweight='bold')
+plt.ylabel('A* Search Cost', fontsize=18, fontweight='bold')
+plt.title(f'A* Correlation: {correlation2:.2f}', fontsize=20, fontweight='bold')
 if show_img:
+    plt.tight_layout()
     plt.show()
 else:
     plt.tight_layout()
